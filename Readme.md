@@ -2,6 +2,21 @@
 
 This project consists of a client and a server.
 
+## Environment Variables
+
+Both the `client` and `server` directories contain a `.env.example` file. Before running the project, you should:
+
+1. Copy the `.env.example` file to `.env` in each directory:
+    - For the client:
+      ```bash
+      cp client/.env.example client/.env
+      ```
+    - For the server:
+      ```bash
+      cp server/.env.example server/.env
+      ```
+2. Open each `.env` file and fill in the required environment variable values as needed for your setup.
+
 ## Client (Vite + React)
 
 ### Installation
