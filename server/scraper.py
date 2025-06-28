@@ -113,7 +113,7 @@ def get_random_user_agent():
     return random.choice(user_agents)
 
 
-def human_like_delay(min_seconds=1, max_seconds=4):
+def human_like_delay(min_seconds=0.5, max_seconds=2):
     """Sleep for a random amount of time to simulate human behavior"""
     delay = random.uniform(min_seconds, max_seconds)
     print(f"Waiting {delay:.2f} seconds...")
@@ -126,13 +126,13 @@ def simulate_human_scrolling(page):
         # Random scroll down
         scroll_distance = random.randint(200, 600)
         page.evaluate(f"window.scrollBy(0, {scroll_distance})")
-        time.sleep(random.uniform(0.3, 0.8))
+        time.sleep(random.uniform(0.2, 0.5))
 
         # Sometimes scroll back up a bit
         if random.random() < 0.3:
             scroll_back = random.randint(100, 300)
             page.evaluate(f"window.scrollBy(0, -{scroll_back})")
-            time.sleep(random.uniform(0.3, 0.6))
+            time.sleep(random.uniform(0.2, 0.4))
     except Exception as e:
         print(f"Error during scrolling simulation: {e}")
 
@@ -141,11 +141,11 @@ def simulate_mouse_movement(page):
     """Simulate random mouse movements"""
     try:
         # Move mouse to random positions
-        for _ in range(random.randint(1, 3)):
+        for _ in range(random.randint(1, 2)):  # Reduced from 1-3 to 1-2
             x = random.randint(100, 800)
             y = random.randint(100, 600)
             page.mouse.move(x, y)
-            time.sleep(random.uniform(0.1, 0.3))
+            time.sleep(random.uniform(0.05, 0.15))  # Reduced from 0.1-0.3
     except Exception as e:
         print(f"Error during mouse movement simulation: {e}")
 
@@ -243,14 +243,14 @@ def scrape_auctions(
             page.goto(url, timeout=60000)
 
             # Initial human-like delay
-            human_like_delay(1.5, 3.5)
+            human_like_delay(0.8, 1.8)
 
             # Simulate human behavior on main page
             simulate_human_scrolling(page)
             simulate_mouse_movement(page)
 
             # Wait for content to load
-            page.wait_for_timeout(random.randint(1500, 3000))
+            page.wait_for_timeout(random.randint(800, 1500))
 
             auctions = page.query_selector_all("div.AList-BoxContainer")
             print(f"Found {len(auctions)} auctions to process")
@@ -261,7 +261,7 @@ def scrape_auctions(
                 try:
                     # Add delay between each auction processing
                     if idx > 0:  # Don't delay before first auction
-                        human_like_delay(1, 2.5)
+                        human_like_delay(0.5, 1.5)  # Reduced from 1-2.5
 
                     date_element = auction.query_selector(
                         "div.AList-BoxMainCell2 .DateIcon"
@@ -271,7 +271,7 @@ def scrape_auctions(
                     )
 
                     auction.wait_for_selector(
-                        "div.AList-BoxMainCell3 .AList-BoxTextBlueBold", timeout=5000
+                        "div.AList-BoxMainCell3 .AList-BoxTextBlueBold", timeout=3000
                     )
                     debtor_element = auction.query_selector(
                         "div.AList-BoxMainCell3 .AList-BoxTextBlueBold"
@@ -281,7 +281,7 @@ def scrape_auctions(
                     )
 
                     auction.wait_for_selector(
-                        "div.AList-BoxMainCell4 .AList-BoxTextBlueBold", timeout=5000
+                        "div.AList-BoxMainCell4 .AList-BoxTextBlueBold", timeout=3000
                     )
                     kind_element = auction.query_selector(
                         "div.AList-BoxMainCell4 .AList-BoxTextBlueBold"
@@ -307,7 +307,7 @@ def scrape_auctions(
 
                     auction.wait_for_selector(
                         "div.AList-Boxheader .AList-BoxheaderRight .AList-BoxTextPrice",
-                        timeout=5000,
+                        timeout=3000,
                     )
                     price_element = auction.query_selector(
                         "div.AList-Boxheader .AList-BoxheaderRight .AList-BoxTextPrice"
@@ -318,7 +318,7 @@ def scrape_auctions(
 
                     auction.wait_for_selector(
                         "div.AList-Boxheader .AList-BoxheaderLeft .AList-BoxTextBlueBold",
-                        timeout=5000,
+                        timeout=3000,
                     )
                     status_element = auction.query_selector(
                         "div.AList-Boxheader .AList-BoxheaderLeft .AList-BoxTextBlueBold"
@@ -329,7 +329,7 @@ def scrape_auctions(
 
                     auction.wait_for_selector(
                         "div.AList-Boxheader .AList-BoxheaderLeft .AList-BoxTextBlueBold",
-                        timeout=5000,
+                        timeout=3000,
                     )
 
                     auction.wait_for_selector(
@@ -392,17 +392,17 @@ def scrape_auctions(
                             detail_page = context.new_page()
 
                             # Human-like delay before opening detail page
-                            human_like_delay(1, 2)
+                            human_like_delay(0.5, 1.2)  # Reduced from 1-2
 
                             detail_page.goto(detail_link, timeout=60000)
 
                             # Simulate human behavior on detail page
-                            detail_page.wait_for_timeout(random.randint(1000, 2000))
+                            detail_page.wait_for_timeout(random.randint(500, 1000))  # Reduced from 1000-2000
                             simulate_human_scrolling(detail_page)
                             simulate_mouse_movement(detail_page)
 
                             # Extract ALL PDF hrefs with delay
-                            time.sleep(random.uniform(0.3, 0.8))
+                            time.sleep(random.uniform(0.2, 0.5))  # Reduced from 0.3-0.8
                             pdf_anchors = detail_page.query_selector_all(
                                 "div.AuctionDetailsPDFItem .AuctionDetailsPDFtext .DownloadAuctionFile"
                             )
@@ -435,7 +435,7 @@ def scrape_auctions(
                                 try:
                                     print(f"Processing first PDF for auction #{idx+1}")
                                     # Human-like delay before PDF processing
-                                    human_like_delay(1, 2)
+                                    human_like_delay(0.5, 1.2)  # Reduced from 1-2
 
                                     # Download and extract PDF text
                                     pdf_text = download_and_extract_pdf_text(pdf_href)
@@ -549,7 +549,7 @@ def scrape_auctions(
                             # Close detail page
                             detail_page.close()
                             # Random delay after closing detail page
-                            human_like_delay(0.5, 1.5)
+                            human_like_delay(0.3, 0.8)  # Reduced from 0.5-1.5
                     else:
                         pdf_href = None
                         all_pdf_links = []
@@ -651,7 +651,7 @@ def scrape_auctions(
                     print(f"Completed processing auction #{idx+1}")
                     
                     # Limit to only 2 auctions
-                    # if idx >= 1:  # After processing 2 auctions (idx 0 and 1)
+                    # if idx >= 4:  # After processing 2 auctions (idx 0 and 1)
                     #     print("Reached limit of 2 auctions. Stopping processing.")
                     #     break
 
@@ -687,7 +687,7 @@ def download_and_extract_pdf_text(pdf_url):
     """Download PDF and extract text content with human-like delays"""
     try:
         # Add random delay before downloading
-        time.sleep(random.uniform(0.5, 1.5))
+        time.sleep(random.uniform(0.3, 0.8))  # Reduced from 0.5-1.5
 
         # Set headers to mimic a real browser
         headers = {
@@ -724,7 +724,7 @@ def analyze_pdf_with_gemini(text_content, model):
 
     try:
         # Add delay to respect API rate limits
-        time.sleep(random.uniform(0.8, 1.5))
+        time.sleep(random.uniform(0.4, 0.8))  # Reduced from 0.8-1.5
 
         # Clean and trim text to stay within token limits
         cleaned_text = "\n".join(
