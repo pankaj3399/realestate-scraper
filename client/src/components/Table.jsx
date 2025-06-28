@@ -39,11 +39,7 @@ const Table = ({ results }) => {
   const formatPrice = (price) => {
     if (!price || price === "N/A") return "N/A";
 
-    // If it's already a formatted string with €, return as is
-    if (typeof price === "string" && price.includes("€")) {
-      return price;
-    }
-
+    // Remove early return for strings containing '€' to always normalize
     // If it's a number, format it
     if (typeof price === "number") {
       return `€${price.toLocaleString("en-US", {
@@ -53,7 +49,7 @@ const Table = ({ results }) => {
     }
 
     // Try to extract number from string and format
-    const numericValue = parseFloat(String(price).replace(/[^\d.-]/g, ""));
+    const numericValue = parseFloat(String(price).replace(/[\d.,]+/g, (match) => match.replace(/\./g, '').replace(/,/g, '.')));
     if (!isNaN(numericValue)) {
       return `€${numericValue.toLocaleString("en-US", {
         minimumFractionDigits: 0,
@@ -70,8 +66,34 @@ const Table = ({ results }) => {
 
     if (typeof price === "number") return price;
 
-    const numericValue = parseFloat(String(price).replace(/[^\d.-]/g, ""));
-    return isNaN(numericValue) ? 0 : numericValue;
+    // Convert Greek format to float (e.g., 60.800,00 € -> 60800.00)
+    const cleaned = String(price).replace(/[^\d.,-]/g, "");
+    if (cleaned.includes(",") && cleaned.includes(".")) {
+      // Greek format: 94.000,50
+      const parts = cleaned.split(",");
+      if (parts.length === 2) {
+        const integerPart = parts[0].replace(/\./g, "");
+        const decimalPart = parts[1];
+        return parseFloat(`${integerPart}.${decimalPart}`);
+      }
+    } else if (cleaned.includes(",") && !cleaned.includes(".")) {
+      // Only comma (decimal separator): 94,50
+      return parseFloat(cleaned.replace(",", "."));
+    } else if (cleaned.includes(".") && !cleaned.includes(",")) {
+      // Check if it's thousands separator or decimal
+      const parts = cleaned.split(".");
+      if (parts.length > 2) {
+        // Multiple periods = thousands separators: 1.234.567
+        return parseFloat(cleaned.replace(/\./g, ""));
+      } else if (parts.length === 2 && parts[1].length === 3) {
+        // Likely thousands separator: 94.000
+        return parseFloat(cleaned.replace(/\./g, ""));
+      }
+      // If decimal part has 1-2 digits, keep as decimal: 94.5 or 94.50
+      return parseFloat(cleaned);
+    }
+    // Fallback
+    return parseFloat(cleaned);
   };
 
   // Filter results based on selected filters
@@ -129,7 +151,7 @@ const Table = ({ results }) => {
     { label: "Occupancy", key: "occupancy_status" },
     { label: "Description", key: "property_description" },
     { label: "Notes", key: "notes" },
-    { label: "PDF", key: "pdf_href" },
+    { label: "All PDFs", key: "excel_pdf_links" },
     { label: "URL", key: "detail_link" },
   ];
 
@@ -137,21 +159,26 @@ const Table = ({ results }) => {
   const exportData = useMemo(() => {
     return filteredResults
       .filter((item) => !item.error) // Exclude error rows
-      .map((item) => ({
-        ...item,
-        ai_labels: (item.ai_labels || []).join(", "), // Convert array to string
-        price: formatPrice(item.price), // Format price for consistency
-        pdf_href: item.pdf_href
-          ? `https://www.eauction.gr${item.pdf_href}`
-          : "N/A",
-      }));
+      .map((item) => {
+        let excelPdfLinks = "";
+        if (item.all_pdf_links && item.all_pdf_links.length > 0) {
+          excelPdfLinks = item.all_pdf_links.join(", ");
+        } else {
+          excelPdfLinks = "No PDFs";
+        }
+        return {
+          ...item,
+          ai_labels: (item.ai_labels || []).join(", "), // Convert array to string
+          price: formatPrice(item.price), // Format price for consistency
+          excel_pdf_links: excelPdfLinks, // Only this column for all PDFs
+        };
+      });
   }, [filteredResults]);
 
   const handleExcelExport = () => {
     const worksheetData = exportData.map((item) => {
       let row = {};
       headers.forEach((header) => {
-        // Use the label for the sheet header and the key to get the data
         row[header.label] = item[header.key];
       });
       return row;
@@ -341,7 +368,7 @@ const Table = ({ results }) => {
                 value={municipalityFilter}
                 onChange={(e) => setMunicipalityFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-sm shadow-sm"
-                disabled={!regionFilter}
+                // disabled={!regionFilter}
               >
                 <option value="">All Municipalities</option>
                 {uniqueMunicipalities.map((municipality) => (
@@ -451,9 +478,6 @@ const Table = ({ results }) => {
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
                   Notes
-                </th>
-                <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  PDF
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
                   URL
@@ -613,18 +637,24 @@ const Table = ({ results }) => {
                     </td>
 
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 border-r border-gray-100 align-top">
-                      {item.pdf_href ? (
-                        <a
-                          href={`https://www.eauction.gr${item.pdf_href}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 px-3 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded-lg font-medium transition-colors text-xs"
-                        >
-                          <FileText className="w-3 h-3" />
-                          PDF
-                        </a>
+                      {item.all_pdf_links && item.all_pdf_links.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {item.all_pdf_links.map((pdfUrl, pdfIndex) => (
+                            <a
+                              key={pdfIndex}
+                              href={pdfUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded font-medium transition-colors text-xs"
+                              title={pdfUrl}
+                            >
+                              <FileText className="w-3 h-3" />
+                              PDF {pdfIndex + 1}
+                            </a>
+                          ))}
+                        </div>
                       ) : (
-                        <span className="text-gray-400 text-xs">No PDF</span>
+                        <span className="text-gray-400 text-xs">No PDFs</span>
                       )}
                     </td>
 

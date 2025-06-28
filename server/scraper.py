@@ -381,6 +381,7 @@ def scrape_auctions(
                     detail_info = None
                     duration = None
                     pdf_href = None
+                    all_pdf_links = []
                     pdf_analysis = {}  # Use a dict for structured data
 
                     if detail_link != "N/A":
@@ -400,144 +401,141 @@ def scrape_auctions(
                             simulate_human_scrolling(detail_page)
                             simulate_mouse_movement(detail_page)
 
-                            # Extract PDF href with delay
+                            # Extract ALL PDF hrefs with delay
                             time.sleep(random.uniform(0.3, 0.8))
-                            pdf_anchor = detail_page.query_selector(
+                            pdf_anchors = detail_page.query_selector_all(
                                 "div.AuctionDetailsPDFItem .AuctionDetailsPDFtext .DownloadAuctionFile"
                             )
-
-                            if pdf_anchor:
-                                pdf_href = pdf_anchor.get_attribute("href")
-                                print(f"PDF href found for auction #{idx+1}")
-
-                                # Process PDF with Gemini if available
-                                if pdf_href and gemini_model:
-                                    try:
-                                        print(f"Processing PDF for auction #{idx+1}")
-
-                                        # Human-like delay before PDF processing
-                                        human_like_delay(1, 2)
-
-                                        # Construct full PDF URL
+                            all_pdf_links = []
+                            if pdf_anchors:
+                                print(f"Found {len(pdf_anchors)} PDF anchor(s) for auction #{idx+1}")
+                                for i, pdf_anchor in enumerate(pdf_anchors):
+                                    pdf_href = pdf_anchor.get_attribute("href")
+                                    if pdf_href:
                                         full_pdf_url = (
                                             f"https://www.eauction.gr{pdf_href}"
                                             if not pdf_href.startswith("http")
                                             else pdf_href
                                         )
+                                        all_pdf_links.append(full_pdf_url)
+                                        print(f"PDF {i+1}: {full_pdf_url}")
+                                if not all_pdf_links:
+                                    print(f"Warning: PDF containers found but no valid links for auction #{idx+1}")
+                            else:
+                                print(f"No PDF anchors found for auction #{idx+1}")
+                                all_pdf_links = []
 
-                                        # Download and extract PDF text
-                                        pdf_text = download_and_extract_pdf_text(
-                                            full_pdf_url
-                                        )
+                            # Set the first PDF as the main one for analysis
+                            pdf_href = all_pdf_links[0] if all_pdf_links else None
+                            if pdf_href:
+                                print(f"Using first PDF for analysis: {pdf_href}")
 
-                                        # OPTIONAL: Log raw PDF text for testing
-                                        print("---------- RAW PDF TEXT ----------")
-                                        print(pdf_text[:2000])  # First 2000 characters
-                                        print("---------- END TEXT -------------")
+                            # Process only the FIRST PDF with Gemini if available
+                            if pdf_href and gemini_model:
+                                try:
+                                    print(f"Processing first PDF for auction #{idx+1}")
+                                    # Human-like delay before PDF processing
+                                    human_like_delay(1, 2)
 
-                                        # Analyze with Gemini
-                                        if pdf_text:
-                                            gemini_json_response = (
-                                                analyze_pdf_with_gemini(
-                                                    pdf_text, gemini_model
-                                                )
+                                    # Download and extract PDF text
+                                    pdf_text = download_and_extract_pdf_text(pdf_href)
+
+                                    # OPTIONAL: Log raw PDF text for testing
+                                    print("---------- RAW PDF TEXT ----------")
+                                    print(pdf_text[:2000])  # First 2000 characters
+                                    print("---------- END TEXT -------------")
+
+                                    # Analyze with Gemini
+                                    if pdf_text:
+                                        gemini_json_response = (
+                                            analyze_pdf_with_gemini(
+                                                pdf_text, gemini_model
                                             )
-                                            if gemini_json_response:
-                                                try:
-                                                    # Clean up response string
-                                                    if (
-                                                        "```json"
-                                                        in gemini_json_response
-                                                    ):
-                                                        gemini_json_response = (
-                                                            gemini_json_response.split(
-                                                                "```json"
-                                                            )[1].split("```")[0]
-                                                        )
-                                                    elif "```" in gemini_json_response:
-                                                        gemini_json_response = (
-                                                            gemini_json_response.split(
-                                                                "```"
-                                                            )[1]
-                                                        )
-
-                                                    # DEBUG LOGGING
-                                                    print(
-                                                        "--------- Gemini Raw JSON Response ----------"
+                                        )
+                                        if gemini_json_response:
+                                            try:
+                                                # Clean up response string
+                                                if (
+                                                    "```json" in gemini_json_response
+                                                ):
+                                                    gemini_json_response = (
+                                                        gemini_json_response.split(
+                                                            "```json"
+                                                        )[1].split("```")[0]
                                                     )
-                                                    print(gemini_json_response)
-                                                    print(
-                                                        "--------------------------------------------"
+                                                elif "```" in gemini_json_response:
+                                                    gemini_json_response = (
+                                                        gemini_json_response.split(
+                                                            "```"
+                                                        )[1]
                                                     )
 
-                                                    data = json.loads(
-                                                        gemini_json_response.strip()
-                                                    )
-                                                    pdf_analysis.update(data)
-
-                                                    # Add price_per_sqm logic only if area and price are valid
-                                                    area = data.get("property_area")
-
-                                                    # Parse Greek-formatted price properly
-                                                    numeric_price = parse_greek_number(
-                                                        price
-                                                    )
-
-                                                    # Also handle Greek-formatted area from PDF if needed
-                                                    if isinstance(area, str):
-                                                        area = parse_greek_number(area)
-
-                                                    if (
-                                                        area
-                                                        and numeric_price
-                                                        and isinstance(
-                                                            area, (int, float)
-                                                        )
-                                                        and area > 0
-                                                    ):
-                                                        price_per_sqm = (
-                                                            numeric_price / area
-                                                        )
-                                                        pdf_analysis[
-                                                            "price_per_sqm"
-                                                        ] = f"€{price_per_sqm:,.2f}"
-                                                    else:
-                                                        pdf_analysis[
-                                                            "price_per_sqm"
-                                                        ] = "N/A"
-
-                                                    print(
-                                                        f"Gemini analysis completed for auction #{idx+1}"
-                                                    )
-                                                except (
-                                                    json.JSONDecodeError,
-                                                    KeyError,
-                                                    Exception,
-                                                ) as e:
-                                                    print(
-                                                        f"Error parsing Gemini JSON for auction #{idx+1}: {e}"
-                                                    )
-                                            else:
+                                                # DEBUG LOGGING
                                                 print(
-                                                    f"Gemini returned no response for auction #{idx+1}"
+                                                    "--------- Gemini Raw JSON Response ----------"
+                                                )
+                                                print(gemini_json_response)
+                                                print(
+                                                    "--------------------------------------------"
+                                                )
+
+                                                data = json.loads(
+                                                    gemini_json_response.strip()
+                                                )
+                                                pdf_analysis.update(data)
+
+                                                # Add price_per_sqm logic only if area and price are valid
+                                                area = data.get("property_area")
+
+                                                # Parse Greek-formatted price properly
+                                                numeric_price = parse_greek_number(
+                                                    price
+                                                )
+
+                                                # Also handle Greek-formatted area from PDF if needed
+                                                if isinstance(area, str):
+                                                    area = parse_greek_number(area)
+
+                                                if (
+                                                    area
+                                                    and numeric_price
+                                                    and isinstance(
+                                                        area, (int, float)
+                                                    )
+                                                    and area > 0
+                                                ):
+                                                    price_per_sqm = (
+                                                        numeric_price / area
+                                                    )
+                                                    pdf_analysis[
+                                                        "price_per_sqm"
+                                                    ] = f"€{price_per_sqm:,.2f}"
+                                                else:
+                                                    pdf_analysis[
+                                                        "price_per_sqm"
+                                                    ] = "N/A"
+
+                                                print(
+                                                    f"Gemini analysis completed for auction #{idx+1}"
+                                                )
+                                            except (
+                                                json.JSONDecodeError,
+                                                KeyError,
+                                                Exception,
+                                            ) as e:
+                                                print(
+                                                    f"Error parsing Gemini JSON for auction #{idx+1}: {e}"
                                                 )
                                         else:
                                             print(
-                                                f"Could not extract text from PDF for auction #{idx+1}"
+                                                f"Gemini returned no response for auction #{idx+1}"
                                             )
-
-                                    except Exception as e:
+                                    else:
                                         print(
-                                            f"Error processing PDF for auction #{idx+1}: {e}"
+                                            f"Could not extract text from PDF for auction #{idx+1}"
                                         )
-                            else:
-                                print(f"No PDF href found for auction #{idx+1}")
-
-                            # Close detail page
-                            detail_page.close()
-
-                            # Random delay after closing detail page
-                            human_like_delay(0.5, 1.5)
+                                except Exception as e:
+                                    print(f"Error processing PDF for auction #{idx+1}: {e}")
 
                         except Exception as e:
                             print(
@@ -546,8 +544,15 @@ def scrape_auctions(
                             detail_info = None
                             duration = None
                             pdf_href = None
+                            all_pdf_links = []
+                        finally:
+                            # Close detail page
+                            detail_page.close()
+                            # Random delay after closing detail page
+                            human_like_delay(0.5, 1.5)
                     else:
                         pdf_href = None
+                        all_pdf_links = []
                         duration = None
 
                     # AI Labeling Logic
@@ -635,7 +640,8 @@ def scrape_auctions(
                         "region": region,
                         "municipality": municipality,
                         "detail_link": detail_link,
-                        "pdf_href": pdf_href,
+                        "pdf_href": pdf_href,  # First PDF (for backward compatibility)
+                        "all_pdf_links": all_pdf_links,  # All PDF links
                         "ai_labels": ai_labels,
                         "simple_tag": simple_tag,
                     }
@@ -643,6 +649,11 @@ def scrape_auctions(
                     results.append(result_item)
 
                     print(f"Completed processing auction #{idx+1}")
+                    
+                    # Limit to only 2 auctions
+                    # if idx >= 1:  # After processing 2 auctions (idx 0 and 1)
+                    #     print("Reached limit of 2 auctions. Stopping processing.")
+                    #     break
 
                 except Exception as e:
                     print(f"Error parsing auction #{idx+1}: {e}")
