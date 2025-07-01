@@ -743,7 +743,7 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
       </div>
 
       {/* Pagination Controls */}
-      <div className="flex justify-center items-center gap-2 my-6">
+      {/* <div className="flex justify-center items-center gap-2 my-6">
         <button
           onClick={() => onPageChange(page - 1)}
           disabled={page <= 1}
@@ -761,7 +761,7 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
         >
           Next
         </button>
-      </div>
+      </div> */}
 
       <Dialog open={!!modalData} onOpenChange={() => setModalData(null)}>
         <DialogContent className="sm:max-w-2xl">

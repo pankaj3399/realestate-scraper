@@ -310,7 +310,7 @@ def scrape_auctions(
                 total_results = 0
 
             # Initial human-like delay
-            human_like_delay(0.8, 1.8)
+            human_like_delay(1.2, 2.6)
 
             # Simulate human behavior on main page
             simulate_human_scrolling(page)
@@ -328,7 +328,7 @@ def scrape_auctions(
                 try:
                     # Add delay between each auction processing
                     if idx > 0:  # Don't delay before first auction
-                        human_like_delay(0.5, 1.5)
+                        human_like_delay(0.8, 2.2)
 
                     date_element = auction.query_selector(
                         "div.AList-BoxMainCell2 .DateIcon"
@@ -459,7 +459,7 @@ def scrape_auctions(
                             detail_page = context.new_page()
 
                             # Human-like delay before opening detail page
-                            human_like_delay(0.5, 1.2)
+                            human_like_delay(0.9, 1.8)
 
                             detail_page.goto(detail_link, timeout=60000)
 
@@ -502,7 +502,7 @@ def scrape_auctions(
                                 try:
                                     print(f"Processing first PDF for auction #{idx+1}")
                                     # Human-like delay before PDF processing
-                                    human_like_delay(0.5, 1.2)
+                                    human_like_delay(0.9, 1.8)
 
                                     # Download and extract PDF text
                                     pdf_text = download_and_extract_pdf_text(pdf_href)
@@ -616,7 +616,7 @@ def scrape_auctions(
                             # Close detail page
                             detail_page.close()
                             # Random delay after closing detail page
-                            human_like_delay(0.3, 0.8)
+                            human_like_delay(0.8, 1.7)
                     else:
                         pdf_href = None
                         all_pdf_links = []
