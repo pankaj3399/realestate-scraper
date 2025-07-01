@@ -659,7 +659,7 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                       </div>
                     </td>
 
-                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 border-r border-gray-100 align-top">
+                    {/* <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 border-r border-gray-100 align-top">
                       {item.all_pdf_links && item.all_pdf_links.length > 0 ? (
                         <div className="flex flex-col gap-1">
                           {item.all_pdf_links.map((pdfUrl, pdfIndex) => (
@@ -679,7 +679,7 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                       ) : (
                         <span className="text-gray-400 text-xs">No PDFs</span>
                       )}
-                    </td>
+                    </td> */}
 
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 border-r border-gray-100 align-top">
                       {item.all_pdf_links && item.all_pdf_links.length > 0 ? (
