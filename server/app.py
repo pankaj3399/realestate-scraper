@@ -74,6 +74,9 @@ def scrape():
     posting_to = data.get('postingTo')
     sort_by = data.get('sortBy', 'auctionDateAsc')
     page = data.get('page', 1)
+    regionParam = data.get('regionParam')
+    propertyParam = data.get('propertyParam')
+    municipalityParam = data.get('municipalityParam')
     
     print("Extracted parameters:")  # Debug log
     print(f"- conductFrom: {conduct_from}")
@@ -82,6 +85,9 @@ def scrape():
     print(f"- postingTo: {posting_to}")
     print(f"- sortBy: {sort_by}")
     print(f"- page: {page}")
+    print(f"- regionParam: {regionParam}")
+    print(f"- propertyParam: {propertyParam}")
+    print(f"- municipalityParam: {municipalityParam}")
 
     # Call scraper with filters
     results = scrape_auctions(
@@ -90,7 +96,10 @@ def scrape():
         posting_from=posting_from,
         posting_to=posting_to,
         sort_by=sort_by,
-        page=page
+        page=page,
+        regionParam=regionParam,
+        propertyParam=propertyParam,
+        municipalityParam=municipalityParam
     )
     return jsonify({"results": results})
 

@@ -19,6 +19,7 @@ import Table from "./components/Table";
 
 function App() {
   const [results, setResults] = useState([]);
+  const [totalResults, setTotalResults] = useState(0);
   // Filter state
   const [conductFrom, setConductFrom] = useState(null);
   const [conductTo, setConductTo] = useState(null);
@@ -33,28 +34,33 @@ function App() {
   const [propertyType, setPropertyType] = useState("");
   const [region, setRegion] = useState("");
   const [municipality, setMunicipality] = useState("");
+  const [lastScrapeParams, setLastScrapeParams] = useState(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
   // Extract unique values from results
-  const uniquePropertyTypes = [...new Set(results.map(item => item.kind).filter(Boolean))].sort();
-  const uniqueRegions = [...new Set(results.map(item => item.region).filter(Boolean))].sort();
-  const uniqueMunicipalities = [...new Set(results.map(item => item.municipality).filter(Boolean))].sort();
+  // const uniquePropertyTypes = [...new Set(results.map(item => item.kind).filter(Boolean))].sort();
+  // const uniqueRegions = [...new Set(results.map(item => item.region).filter(Boolean))].sort();
+  // const uniqueMunicipalities = [...new Set(results.map(item => item.municipality).filter(Boolean))].sort();
 
-  const handleScrape = async () => {
+  const handleScrape = async (params) => {
     setIsLoading(true);
     setResults([]);
     setError(null);
-
+    setLastScrapeParams(params); // Save last used params for pagination
 
     const requestData = {
-      conductFrom: conductFrom,
-      conductTo: conductTo,
-      postingFrom: postingFrom,
-      postingTo: postingTo,
-      sortBy: sortBy,
-      page: page,
-      propertyType: propertyType || undefined,
-      region: region || undefined,
-      municipality: municipality || undefined
+      conductFrom: params.conductFrom,
+      conductTo: params.conductTo,
+      postingFrom: params.postingFrom,
+      postingTo: params.postingTo,
+      sortBy: params.sortBy,
+      page: params.page,
+      regionParam: params.regionParam,
+      propertyParam: params.propertyParam,
+      municipalityParam: params.municipalityParam,
+      selectedRegion: params.selectedRegion,
+      selectedMunicipality: params.selectedMunicipality,
+      selectedPropertyType: params.selectedPropertyType,
     };
 
     console.log("Sending request with data:", requestData);
@@ -69,20 +75,29 @@ function App() {
       });
 
       const data = await response.json();
+      setHasSearched(true);
       console.log("Received response:", data);
       
       if (data.results) {
         setResults(data.results);
-        // Reset municipality if region changes and selected municipality is not in new region
-        if (region && !data.results.some(item => item.region === region && item.municipality === municipality)) {
+        setTotalResults(data.total_results || data.results.length);
+        if (params.selectedRegion && !data.results.results.some(item => item.region === params.selectedRegion && item.municipality === params.selectedMunicipality)) {
           setMunicipality("");
         }
       }
     } catch (err) {
+      setHasSearched(true);
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Pagination handler
+  const handlePageChange = (newPage) => {
+    if (!lastScrapeParams) return;
+    setPage(newPage);
+    handleScrape({ ...lastScrapeParams, page: newPage });
   };
 
   const clearFilters = () => {
@@ -98,15 +113,17 @@ function App() {
   };
 
   // Get municipalities for selected region
-  const filteredMunicipalities = region 
-    ? uniqueMunicipalities.filter(mun => 
-        results.some(item => item.region === region && item.municipality === mun)
-      )
-    : uniqueMunicipalities;
+  // const filteredMunicipalities = region 
+    // ? uniqueMunicipalities.filter(mun => 
+        // results.some(item => item.region === region && item.municipality === mun)
+      // )
+    // : uniqueMunicipalities;
 
   // Check if any filters are active
   const hasActiveFilters = conductFrom || conductTo || postingFrom || postingTo || 
     sortBy !== "auctionDateAsc" || page !== 1 || propertyType || region || municipality;
+
+    console.log(results,totalResults)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -170,7 +187,13 @@ function App() {
         )}
 
         {/* Results Table with Post-scraping Filters */}
-        <Table results={results} />
+        <Table
+          results={results}
+          totalResults={totalResults}
+          page={page}
+          onPageChange={handlePageChange}
+          hasSearched={hasSearched}
+        />
       </div>
     </div>
   );

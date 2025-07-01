@@ -24,7 +24,9 @@ import {
   BookText,
 } from "lucide-react";
 
-const Table = ({ results }) => {
+const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange, hasSearched }) => {
+  const resultArray = Array.isArray(results.results) ? results.results : [];
+  const totalResults = results.total_results || 0;
   // Post-scraping filter states
   const [propertyTypeFilter, setPropertyTypeFilter] = useState("");
   const [regionFilter, setRegionFilter] = useState("");
@@ -49,7 +51,11 @@ const Table = ({ results }) => {
     }
 
     // Try to extract number from string and format
-    const numericValue = parseFloat(String(price).replace(/[\d.,]+/g, (match) => match.replace(/\./g, '').replace(/,/g, '.')));
+    const numericValue = parseFloat(
+      String(price).replace(/[\d.,]+/g, (match) =>
+        match.replace(/\./g, "").replace(/,/g, ".")
+      )
+    );
     if (!isNaN(numericValue)) {
       return `€${numericValue.toLocaleString("en-US", {
         minimumFractionDigits: 0,
@@ -98,7 +104,15 @@ const Table = ({ results }) => {
 
   // Filter results based on selected filters
   const filteredResults = useMemo(() => {
-    return results.filter((item) => {
+    // Ensure resultArray is an array
+    if (!Array.isArray(resultArray)) {
+      console.log("resultArray is not an array:", resultArray);
+      return [];
+    }
+
+    console.log(resultArray);
+
+    return resultArray.filter((item) => {
       // Skip error items in filtering
       if (item.error) return true;
 
@@ -126,7 +140,7 @@ const Table = ({ results }) => {
       return true;
     });
   }, [
-    results,
+    resultArray,
     propertyTypeFilter,
     regionFilter,
     municipalityFilter,
@@ -189,54 +203,58 @@ const Table = ({ results }) => {
     XLSX.writeFile(workbook, "AuctionResults.xlsx");
   };
 
-  // Extract unique values from results
+  // Extract unique values from results - with safety checks
   const uniquePropertyTypes = useMemo(
     () =>
       [
         ...new Set(
-          results
+          resultArray
+            .filter((item) => item && item.kind) // Add safety check
             .map((item) => item.kind)
             .filter((kind) => kind && kind !== "N/A")
         ),
       ].sort(),
-    [results]
+    [resultArray]
   );
 
   const uniqueRegions = useMemo(
     () =>
       [
         ...new Set(
-          results
+          resultArray
+            .filter((item) => item && item.region) // Add safety check
             .map((item) => item.region)
             .filter((region) => region && region !== "N/A")
         ),
       ].sort(),
-    [results]
+    [resultArray]
   );
 
   const uniqueMunicipalities = useMemo(() => {
     const municipalities = regionFilter
-      ? results
-          .filter((item) => item.region === regionFilter)
+      ? resultArray
+          .filter((item) => item && item.region === regionFilter) // Add safety check
           .map((item) => item.municipality)
           .filter((municipality) => municipality && municipality !== "N/A")
-      : results
+      : resultArray
+          .filter((item) => item && item.municipality) // Add safety check
           .map((item) => item.municipality)
           .filter((municipality) => municipality && municipality !== "N/A");
 
     return [...new Set(municipalities)].sort();
-  }, [results, regionFilter]);
+  }, [resultArray, regionFilter]);
 
   const uniqueOccupancyStatuses = useMemo(
     () =>
       [
         ...new Set(
-          results
+          resultArray
+            .filter((item) => item && item.occupancy_status) // Add safety check
             .map((item) => item.occupancy_status)
             .filter((status) => status && status !== "N/A")
         ),
       ].sort(),
-    [results]
+    [resultArray]
   );
 
   const clearPostFilters = () => {
@@ -255,7 +273,16 @@ const Table = ({ results }) => {
     priceFilter.max ||
     occupancyFilter;
 
-  if (!results.length) {
+  // Pagination logic
+  const resultsPerPage = 20;
+  const totalPages = Math.max(
+    1,
+    Math.ceil((totalResults || resultArray.length) / resultsPerPage)
+  );
+
+  console.log(totalResults)
+
+  if (hasSearched && (!Array.isArray(resultArray) || resultArray.length === 0)) {
     return (
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8 text-center">
         <Grid3X3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
@@ -280,7 +307,7 @@ const Table = ({ results }) => {
                   Auction Results
                 </h2>
                 <p className="text-sm text-gray-600">
-                  Showing {filteredResults.length} of {results.length} auctions
+                  Showing {filteredResults.length} of {resultArray.length} auctions
                 </p>
               </div>
             </div>
@@ -313,9 +340,7 @@ const Table = ({ results }) => {
             </div>
           </div>
 
-          {/* Filters */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            {/* Property Type Filter */}
+          {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             <div>
               <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
                 <Home className="w-4 h-4" />
@@ -335,7 +360,6 @@ const Table = ({ results }) => {
               </select>
             </div>
 
-            {/* Region Filter */}
             <div>
               <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
                 <MapPin className="w-4 h-4" />
@@ -358,7 +382,6 @@ const Table = ({ results }) => {
               </select>
             </div>
 
-            {/* Municipality Filter */}
             <div>
               <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
                 <MapPin className="w-4 h-4" />
@@ -368,7 +391,6 @@ const Table = ({ results }) => {
                 value={municipalityFilter}
                 onChange={(e) => setMunicipalityFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-sm shadow-sm"
-                // disabled={!regionFilter}
               >
                 <option value="">All Municipalities</option>
                 {uniqueMunicipalities.map((municipality) => (
@@ -379,7 +401,6 @@ const Table = ({ results }) => {
               </select>
             </div>
 
-            {/* Occupancy Filter */}
             <div>
               <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
                 <User className="w-4 h-4" />
@@ -399,7 +420,6 @@ const Table = ({ results }) => {
               </select>
             </div>
 
-            {/* Price Range Filter */}
             <div>
               <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
                 <Euro className="w-4 h-4" />
@@ -426,7 +446,7 @@ const Table = ({ results }) => {
                 />
               </div>
             </div>
-          </div>
+          </div> */}
         </div>
 
         {/* Results Table */}
@@ -618,7 +638,10 @@ const Table = ({ results }) => {
                     </td>
 
                     <td className="px-4 py-4 text-sm text-gray-600 max-w-lg border-r border-gray-100 align-top">
-                      <div className="text-xs leading-relaxed" title={item.notes}>
+                      <div
+                        className="text-xs leading-relaxed"
+                        title={item.notes}
+                      >
                         <p className="line-clamp-2">{item.notes || "N/A"}</p>
                         {item.notes && (
                           <button
@@ -634,6 +657,28 @@ const Table = ({ results }) => {
                           </button>
                         )}
                       </div>
+                    </td>
+
+                    <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 border-r border-gray-100 align-top">
+                      {item.all_pdf_links && item.all_pdf_links.length > 0 ? (
+                        <div className="flex flex-col gap-1">
+                          {item.all_pdf_links.map((pdfUrl, pdfIndex) => (
+                            <a
+                              key={pdfIndex}
+                              href={pdfUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 text-green-700 hover:bg-green-200 rounded font-medium transition-colors text-xs"
+                              title={pdfUrl}
+                            >
+                              <FileText className="w-3 h-3" />
+                              PDF {pdfIndex + 1}
+                            </a>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-xs">No PDFs</span>
+                      )}
                     </td>
 
                     <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-600 border-r border-gray-100 align-top">
@@ -677,23 +722,45 @@ const Table = ({ results }) => {
         </div>
 
         {/* Footer */}
-        {filteredResults.length === 0 && !results.some((item) => item.error) && (
-          <div className="p-8 text-center bg-gray-50">
-            <Filter className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No Results Found
-            </h3>
-            <p className="text-gray-500 mb-4">
-              Try adjusting your filters to see more results.
-            </p>
-            <button
-              onClick={clearPostFilters}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Clear All Filters
-            </button>
-          </div>
-        )}
+        {filteredResults.length === 0 &&
+          !resultArray.some((item) => item.error) && (
+            <div className="p-8 text-center bg-gray-50">
+              <Filter className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                No Results Found
+              </h3>
+              <p className="text-gray-500 mb-4">
+                Try adjusting your filters to see more results.
+              </p>
+              <button
+                onClick={clearPostFilters}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Clear All Filters
+              </button>
+            </div>
+          )}
+      </div>
+
+      {/* Pagination Controls */}
+      <div className="flex justify-center items-center gap-2 my-6">
+        <button
+          onClick={() => onPageChange(page - 1)}
+          disabled={page <= 1}
+          className="px-3 py-1 rounded border bg-white disabled:opacity-50"
+        >
+          Prev
+        </button>
+        <span>
+          Page {page} of {totalPages}
+        </span>
+        <button
+          onClick={() => onPageChange(page + 1)}
+          disabled={page >= totalPages}
+          className="px-3 py-1 rounded border bg-white disabled:opacity-50"
+        >
+          Next
+        </button>
       </div>
 
       <Dialog open={!!modalData} onOpenChange={() => setModalData(null)}>

@@ -8,6 +8,7 @@ import os
 import random
 import time
 import json
+import re
 
 
 def format_date(date_str):
@@ -34,7 +35,10 @@ def construct_url(params):
     ordered_params = []
 
     # First add conductFrom
-    ordered_params.append(f"conductFrom={params['conductFrom']}")
+    if params.get('conductFrom'):
+        ordered_params.append(f"conductFrom={params['conductFrom']}")
+
+    ordered_params.append("type=1")
 
     # Then add sort parameters if present
     if "sortAsc" in params and "sortId" in params:
@@ -42,20 +46,45 @@ def construct_url(params):
         ordered_params.append(f"sortId={params['sortId']}")
 
     # Add other date parameters if present
-    if "conductTo" in params:
+    if params.get('conductTo'):
         ordered_params.append(f"conductTo={params['conductTo']}")
-    if "postFrom" in params:
+    if params.get('postFrom'):
         ordered_params.append(f"postFrom={params['postFrom']}")
-    if "postTo" in params:
+    if params.get('postTo'):
         ordered_params.append(f"postTo={params['postTo']}")
+
+    # Add property type parameter (subType)
+    if params.get('propertyParam'):
+        # Extract subType value from propertyParam like "&subType=5"
+        property_param = params['propertyParam'].strip()
+        if property_param.startswith('&'):
+            property_param = property_param[1:]  # Remove leading &
+        ordered_params.append(property_param)
+
+    # Add region parameter (extendedFilter1)
+    if params.get('regionParam'):
+        region_param = params['regionParam'].strip()
+        if region_param.startswith('&'):
+            region_param = region_param[1:]  # Remove leading &
+        ordered_params.append(region_param)
+
+    # Add municipality parameter (extendedFilter2)
+    if params.get('municipalityParam'):
+        municipality_param = params['municipalityParam'].strip()
+        if municipality_param.startswith('&'):
+            municipality_param = municipality_param[1:]  # Remove leading &
+        ordered_params.append(municipality_param)
 
     # Always add these at the end
     ordered_params.append("conductedSubTypeId=1")
+    
     # Use the page parameter if present, otherwise default to 1
     page_num = params.get("page", 1)
     ordered_params.append(f"page={page_num}")
 
-    return f"{base_url}?{'&'.join(ordered_params)}"
+    final_url = f"{base_url}?{'&'.join(ordered_params)}"
+    print(f"Final constructed URL: {final_url}")
+    return final_url
 
 
 def parse_greek_number(number_str):
@@ -157,6 +186,12 @@ def scrape_auctions(
     posting_to=None,
     sort_by="auctionDateAsc",
     page=1,
+    regionParam=None,
+    propertyParam=None,
+    municipalityParam=None,
+    selectedRegion=None,
+    selectedMunicipality=None,
+    selectedPropertyType=None,
 ):
     # Configure Gemini at the start
     gemini_model = configure_gemini()
@@ -179,28 +214,43 @@ def scrape_auctions(
     if posting_to:
         params["postTo"] = format_date(posting_to)
 
-    print(f"\nReceived sort_by parameter: {sort_by}")  # Debug log
+    print(f"\nReceived parameters:")
+    print(f"- sort_by: {sort_by}")
+    print(f"- regionParam: {regionParam}")
+    print(f"- propertyParam: {propertyParam}")
+    print(f"- municipalityParam: {municipalityParam}")
+    print(f"- selectedRegion: {selectedRegion}")
+    print(f"- selectedMunicipality: {selectedMunicipality}")
+    print(f"- selectedPropertyType: {selectedPropertyType}")
 
     # Handle sorting
     if sort_by:
         if sort_by in ["auctionDateAsc", "auctionDateDesc"]:
-            print("Setting auction date sort")  # Debug log
+            print("Setting auction date sort")
             params["sortId"] = 1
             params["sortAsc"] = sort_by == "auctionDateAsc"
         elif sort_by in ["priceAsc", "priceDesc"]:
-            print("Setting price sort")  # Debug log
+            print("Setting price sort")
             params["sortId"] = 2
             params["sortAsc"] = sort_by == "priceAsc"
         else:
-            print(f"Unknown sort_by value: {sort_by}")  # Debug log
+            print(f"Unknown sort_by value: {sort_by}")
 
     print(
         f"Final sort parameters: sortId={params.get('sortId')}, sortAsc={params.get('sortAsc')}"
-    )  # Debug log
+    )
+
+    # Add region/property/municipality params if present
+    if regionParam:
+        params["regionParam"] = regionParam
+    if propertyParam:
+        params["propertyParam"] = propertyParam
+    if municipalityParam:
+        params["municipalityParam"] = municipalityParam
 
     # Construct URL with specific format
     url = construct_url(params)
-    print(f"Generated URL: {url}")  # Debug log
+    print(f"Generated URL: {url}")
 
     with sync_playwright() as p:
         # Launch browser with more realistic settings
@@ -238,9 +288,26 @@ def scrape_auctions(
 
         page = context.new_page()
 
+        total_results = 0
         try:
             print("Loading main auction page...")
             page.goto(url, timeout=60000)
+
+            # Extract total results count
+            try:
+                total_text_elem = page.query_selector(".AuctionsListSearchOrderingTbl .AuctionsList-resultstxt")
+                if total_text_elem:
+                    total_text = total_text_elem.inner_text().strip()
+                    # Example: '14 auctions found' or '84 auctions found'
+                    match = re.search(r"\d+", total_text)
+                    if match:
+                        total_results = int(match.group())
+                    else:
+                        total_results = 0
+                    print(f"Total results found: {total_results}")
+            except Exception as e:
+                print(f"Could not extract total results: {e}")
+                total_results = 0
 
             # Initial human-like delay
             human_like_delay(0.8, 1.8)
@@ -256,12 +323,12 @@ def scrape_auctions(
             print(f"Found {len(auctions)} auctions to process")
 
             for idx, auction in enumerate(auctions):
-                print(f"\nProcessing auction #{idx+1}/{min(len(auctions), 2)}")
+                print(f"\nProcessing auction #{idx+1}/{len(auctions)}")
 
                 try:
                     # Add delay between each auction processing
                     if idx > 0:  # Don't delay before first auction
-                        human_like_delay(0.5, 1.5)  # Reduced from 1-2.5
+                        human_like_delay(0.5, 1.5)
 
                     date_element = auction.query_selector(
                         "div.AList-BoxMainCell2 .DateIcon"
@@ -392,17 +459,17 @@ def scrape_auctions(
                             detail_page = context.new_page()
 
                             # Human-like delay before opening detail page
-                            human_like_delay(0.5, 1.2)  # Reduced from 1-2
+                            human_like_delay(0.5, 1.2)
 
                             detail_page.goto(detail_link, timeout=60000)
 
                             # Simulate human behavior on detail page
-                            detail_page.wait_for_timeout(random.randint(500, 1000))  # Reduced from 1000-2000
+                            detail_page.wait_for_timeout(random.randint(500, 1000))
                             simulate_human_scrolling(detail_page)
                             simulate_mouse_movement(detail_page)
 
                             # Extract ALL PDF hrefs with delay
-                            time.sleep(random.uniform(0.2, 0.5))  # Reduced from 0.3-0.8
+                            time.sleep(random.uniform(0.2, 0.5))
                             pdf_anchors = detail_page.query_selector_all(
                                 "div.AuctionDetailsPDFItem .AuctionDetailsPDFtext .DownloadAuctionFile"
                             )
@@ -435,7 +502,7 @@ def scrape_auctions(
                                 try:
                                     print(f"Processing first PDF for auction #{idx+1}")
                                     # Human-like delay before PDF processing
-                                    human_like_delay(0.5, 1.2)  # Reduced from 1-2
+                                    human_like_delay(0.5, 1.2)
 
                                     # Download and extract PDF text
                                     pdf_text = download_and_extract_pdf_text(pdf_href)
@@ -549,7 +616,7 @@ def scrape_auctions(
                             # Close detail page
                             detail_page.close()
                             # Random delay after closing detail page
-                            human_like_delay(0.3, 0.8)  # Reduced from 0.5-1.5
+                            human_like_delay(0.3, 0.8)
                     else:
                         pdf_href = None
                         all_pdf_links = []
@@ -629,8 +696,8 @@ def scrape_auctions(
                     # Add to results, merging pdf_analysis data
                     result_item = {
                         "code": uniqueCode,
-                        "part_number": partLabel,  # Placeholder
-                        "post_date": postDate,  # Placeholder
+                        "part_number": partLabel,
+                        "post_date": postDate,
                         "auction_object": kind,
                         "status": status,
                         "price": price,  # This is the Starting Price from the list
@@ -644,16 +711,17 @@ def scrape_auctions(
                         "all_pdf_links": all_pdf_links,  # All PDF links
                         "ai_labels": ai_labels,
                         "simple_tag": simple_tag,
+                        # Add filter context for debugging
+                        "filter_context": {
+                            "selectedRegion": selectedRegion,
+                            "selectedMunicipality": selectedMunicipality,
+                            "selectedPropertyType": selectedPropertyType,
+                        }
                     }
                     result_item.update(pdf_analysis)  # Merge PDF data
                     results.append(result_item)
 
                     print(f"Completed processing auction #{idx+1}")
-                    
-                    # Limit to only 2 auctions
-                    # if idx >= 4:  # After processing 2 auctions (idx 0 and 1)
-                    #     print("Reached limit of 2 auctions. Stopping processing.")
-                    #     break
 
                 except Exception as e:
                     print(f"Error parsing auction #{idx+1}: {e}")
@@ -669,7 +737,7 @@ def scrape_auctions(
             browser.close()
 
     print(f"\nCompleted scraping {len(results)} auctions")
-    return results
+    return {"results": results, "total_results": total_results}
 
 
 def configure_gemini():
@@ -687,7 +755,7 @@ def download_and_extract_pdf_text(pdf_url):
     """Download PDF and extract text content with human-like delays"""
     try:
         # Add random delay before downloading
-        time.sleep(random.uniform(0.3, 0.8))  # Reduced from 0.5-1.5
+        time.sleep(random.uniform(0.3, 0.8))
 
         # Set headers to mimic a real browser
         headers = {
@@ -780,5 +848,5 @@ Document:
 if __name__ == "__main__":
     print("Starting auction scraper with human-like behavior...")
     auctions = scrape_auctions()
-    for idx, auction in enumerate(auctions):
+    for idx, auction in enumerate(auctions["results"]):
         print(f"Auction #{idx+1}: {auction}")
