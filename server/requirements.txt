@@ -1,0 +1,5 @@
+Flask
+playwright
+google-generativeai
+PyPDF2
+requests 
