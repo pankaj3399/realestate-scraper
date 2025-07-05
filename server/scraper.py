@@ -474,10 +474,13 @@ def scrape_auctions(
                                 "div.AuctionDetailsPDFItem .AuctionDetailsPDFtext .DownloadAuctionFile"
                             )
                             all_pdf_links = []
+                            pdf_href_for_analysis = None
                             if pdf_anchors:
                                 print(f"Found {len(pdf_anchors)} PDF anchor(s) for auction #{idx+1}")
+                                print(pdf_anchors,"these are pdfs")
                                 for i, pdf_anchor in enumerate(pdf_anchors):
                                     pdf_href = pdf_anchor.get_attribute("href")
+                                    pdf_title = pdf_anchor.get_attribute("title")
                                     if pdf_href:
                                         full_pdf_url = (
                                             f"https://www.eauction.gr{pdf_href}"
@@ -485,22 +488,27 @@ def scrape_auctions(
                                             else pdf_href
                                         )
                                         all_pdf_links.append(full_pdf_url)
-                                        print(f"PDF {i+1}: {full_pdf_url}")
+                                        print(f"PDF {i+1}: {full_pdf_url} (title: {pdf_title})")
+                                        # If title starts with 'report', prefer this for analysis
+                                        if not pdf_href_for_analysis and pdf_title and pdf_title.lower().startswith("report"):
+                                            pdf_href_for_analysis = full_pdf_url
                                 if not all_pdf_links:
                                     print(f"Warning: PDF containers found but no valid links for auction #{idx+1}")
                             else:
                                 print(f"No PDF anchors found for auction #{idx+1}")
                                 all_pdf_links = []
 
-                            # Set the first PDF as the main one for analysis
-                            pdf_href = all_pdf_links[0] if all_pdf_links else None
+                            # Set the PDF for analysis: prefer 'report', else first
+                            if not pdf_href_for_analysis and all_pdf_links:
+                                pdf_href_for_analysis = all_pdf_links[0]
+                            pdf_href = pdf_href_for_analysis
                             if pdf_href:
-                                print(f"Using first PDF for analysis: {pdf_href}")
+                                print(f"Using PDF for analysis: {pdf_href}")
 
-                            # Process only the FIRST PDF with Gemini if available
+                            # Process only the SELECTED PDF with Gemini if available
                             if pdf_href and gemini_model:
                                 try:
-                                    print(f"Processing first PDF for auction #{idx+1}")
+                                    print(f"Processing selected PDF for auction #{idx+1}")
                                     # Human-like delay before PDF processing
                                     human_like_delay(0.9, 1.8)
 
