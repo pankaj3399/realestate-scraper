@@ -1,6 +1,6 @@
 'use client'
 import "./App.css";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import {
@@ -13,11 +13,17 @@ import {
   CheckCircle as CheckCircleIcon,
   Loader as LoaderIcon,
   X as XIcon,
+  Clock as ClockIcon,
 } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 import Filters from "./components/Filters";
 import Table from "./components/Table";
+import LanguageSelector from "./components/LanguageSelector";
+
+const COOLDOWN_KEY = 'cooldownEndTime';
 
 function App() {
+  const { t } = useTranslation();
   const [results, setResults] = useState([]);
   const [totalResults, setTotalResults] = useState(0);
   // Filter state
@@ -37,12 +43,65 @@ function App() {
   const [lastScrapeParams, setLastScrapeParams] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
 
-  // Extract unique values from results
-  // const uniquePropertyTypes = [...new Set(results.map(item => item.kind).filter(Boolean))].sort();
-  // const uniqueRegions = [...new Set(results.map(item => item.region).filter(Boolean))].sort();
-  // const uniqueMunicipalities = [...new Set(results.map(item => item.municipality).filter(Boolean))].sort();
+  // Cooldown state for CAPTCHA protection
+  const [cooldownEndTime, setCooldownEndTime] = useState(null);
+  const [timeLeft, setTimeLeft] = useState(null);
 
-  const handleScrape = async (params) => {
+  // On mount, restore cooldown from localStorage if present
+  useEffect(() => {
+    const stored = localStorage.getItem(COOLDOWN_KEY);
+    if (stored && Number(stored) > Date.now()) {
+      setCooldownEndTime(Number(stored));
+    }
+  }, []);
+
+  // Persist cooldownEndTime to localStorage whenever it changes
+  useEffect(() => {
+    if (cooldownEndTime && cooldownEndTime > Date.now()) {
+      localStorage.setItem(COOLDOWN_KEY, cooldownEndTime);
+    } else {
+      localStorage.removeItem(COOLDOWN_KEY);
+    }
+  }, [cooldownEndTime]);
+
+  // Update time left for cooldown
+  useEffect(() => {
+    if (!cooldownEndTime) {
+      setTimeLeft(null);
+      return;
+    }
+
+    const updateTimeLeft = () => {
+      const now = Date.now();
+      const remaining = cooldownEndTime - now;
+      
+      if (remaining <= 0) {
+        setCooldownEndTime(null);
+        setTimeLeft(null);
+      } else {
+        const minutes = Math.floor(remaining / 60000);
+        const seconds = Math.floor((remaining % 60000) / 1000);
+        setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+      }
+    };
+
+    updateTimeLeft();
+    const interval = setInterval(updateTimeLeft, 1000);
+
+    return () => clearInterval(interval);
+  }, [cooldownEndTime]);
+
+  const handleScrape = useCallback(async (params) => {
+    // Check if cooldown is active
+    if (cooldownEndTime && Date.now() < cooldownEndTime) {
+      return;
+    }
+
+    // Prevent multiple simultaneous requests
+    if (isLoading) {
+      return;
+    }
+
     setIsLoading(true);
     setResults([]);
     setError(null);
@@ -85,13 +144,19 @@ function App() {
           setMunicipality("");
         }
       }
+
+      // Set cooldown after successful scrape (8 minutes = 480000ms)
+      const endTime = Date.now() + 480000;
+      setCooldownEndTime(endTime);
+      localStorage.setItem(COOLDOWN_KEY, endTime);
+      
     } catch (err) {
       setHasSearched(true);
       setError(err.message);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading, cooldownEndTime]);
 
   // Pagination handler
   const handlePageChange = (newPage) => {
@@ -123,6 +188,9 @@ function App() {
   const hasActiveFilters = conductFrom || conductTo || postingFrom || postingTo || 
     sortBy !== "auctionDateAsc" || page !== 1 || propertyType || region || municipality;
 
+  // Check if scraping is disabled due to cooldown
+  const isScrapingDisabled = isLoading || (cooldownEndTime && Date.now() < cooldownEndTime);
+
     console.log(results,totalResults)
 
   return (
@@ -130,17 +198,19 @@ function App() {
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-3 mb-2">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-600 rounded-lg">
               <SearchIcon className="w-6 h-6 text-white" />
             </div>
             <h1 className="text-4xl font-bold text-gray-800">
-              Auction Scraper Dashboard
+                {t('auctionScraperDashboard')}
             </h1>
+            </div>
+            <LanguageSelector />
           </div>
           <p className="text-gray-600 text-lg">
-            Configure filters and scrape auction data with advanced search
-            capabilities
+            {t('configureFiltersAndScrape')}
           </p>
         </div>
 
@@ -162,6 +232,8 @@ function App() {
           isLoading={isLoading}
           clearFilters={clearFilters}
           hasActiveFilters={hasActiveFilters}
+          isScrapingDisabled={isScrapingDisabled}
+          timeLeft={timeLeft}
         />
 
         {/* Status Messages */}
@@ -175,14 +247,24 @@ function App() {
         {isLoading && (
           <div className="p-4 rounded-lg border mb-8 flex items-center gap-3 bg-blue-50 text-blue-600 border-blue-200">
             <LoaderIcon className="w-5 h-5 animate-spin" />
-            <span className="font-medium">Scraping in progress...</span>
+            <span className="font-medium">{t('scrapingInProgress')}</span>
           </div>
         )}
 
         {!isLoading && results.length > 0 && !error && (
           <div className="p-4 rounded-lg border mb-8 flex items-center gap-3 bg-green-50 text-green-600 border-green-200">
             <CheckCircleIcon className="w-5 h-5" />
-            <span className="font-medium">Scraping complete!</span>
+            <span className="font-medium">{t('scrapingComplete')}</span>
+          </div>
+        )}
+
+        {/* Cooldown Warning */}
+        {cooldownEndTime && Date.now() < cooldownEndTime && (
+          <div className="p-4 rounded-lg border mb-8 flex items-center gap-3 bg-yellow-50 text-yellow-700 border-yellow-200">
+            <ClockIcon className="w-5 h-5" />
+            <span className="font-medium">
+              {t('waitBeforeNextScrape', { timeLeft })}
+            </span>
           </div>
         )}
 

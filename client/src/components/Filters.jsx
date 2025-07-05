@@ -6,7 +6,9 @@ import {
   Filter as FilterIcon,
   X as XIcon,
   Loader as LoaderIcon,
+  Clock as ClockIcon,
 } from "lucide-react";
+import { useTranslation } from 'react-i18next';
 import region_municipality_map from "@/lib/region_municipality.json";
 
 const Filters = ({
@@ -26,61 +28,80 @@ const Filters = ({
   isLoading,
   clearFilters,
   hasActiveFilters,
+  isScrapingDisabled,
+  timeLeft,
 }) => {
-  const [region, setRegion] = React.useState("Select All");
-  const [municipality, setMunicipality] = React.useState("Select All");
-  const [municipalities, setMunicipalities] = React.useState([]);
-  const [propertyType, setPropertyType] = React.useState("Select All");
+  const { t, i18n } = useTranslation();
+  const language = i18n.language;
 
-  // Build regions from mapping
-  const regions = ["Select All", ...Object.keys(region_municipality_map)];
-
-  const propertyTypes = [
-    "Select All",
-    "Residence", // subType=5
-    "Other Commercial Property", // subType=6
-    "Store", // subType=7
-    "Office", // subType=8
-    "Parking", // subType=9
-    "Warehouse", // subType=10
-    "Industrial Building", // subType=11
-    "Plot", // subType=12
-    "Plot with building", // subType=13
-    "Land", // subType=14
-    "Land with building", // subType=15
-    "Hotels", // subType=16
+  // Build region options
+  const regionOptions = [
+    { label: t('selectAll'), value: 'Select All' },
+    ...Object.entries(region_municipality_map).map(([regionKey, regionObj]) => ({
+      label: language === 'el' ? regionKey : regionObj.region_name_en,
+      value: regionKey // always Greek key for API
+    }))
   ];
 
-  // Load municipalities when region changes
+  // State for region and municipality
+  const [region, setRegion] = React.useState('Select All');
+  const [municipality, setMunicipality] = React.useState('Select All');
+  const [municipalities, setMunicipalities] = React.useState([]);
+  const [propertyType, setPropertyType] = React.useState('Select All');
+
+  // Update municipalities when region changes
   React.useEffect(() => {
-    if (region === "Select All") {
-      setMunicipalities(["Select All"]);
-      setMunicipality("Select All");
+    if (region === 'Select All') {
+      setMunicipalities([{ label: t('selectAll'), value: 'Select All' }]);
+      setMunicipality('Select All');
       return;
     }
-    // Get municipalities from the JSON data
     try {
       const regionData = region_municipality_map[region];
       if (regionData && Array.isArray(regionData.municipalities)) {
         setMunicipalities([
-          "Select All",
-          ...regionData.municipalities.map((m) => m.name),
+          { label: t('selectAll'), value: 'Select All' },
+          ...regionData.municipalities.map((m) => ({
+            label: language === 'el' ? m.name_gr : m.name_en,
+            value: m.name_gr // always Greek for API
+          }))
         ]);
       } else {
-        setMunicipalities(["Select All"]);
+        setMunicipalities([{ label: t('selectAll'), value: 'Select All' }]);
       }
-      setMunicipality("Select All");
+      setMunicipality('Select All');
     } catch (error) {
       console.error("Error loading municipalities:", error);
-      setMunicipalities(["Select All"]);
-      setMunicipality("Select All");
+      setMunicipalities([{ label: t('selectAll'), value: 'Select All' }]);
+      setMunicipality('Select All');
     }
-  }, [region]);
+  }, [region, t, language]);
+
+  const propertyTypes = [
+    t('selectAll'),
+    t('residence'), // subType=5
+    t('otherCommercialProperty'), // subType=6
+    t('store'), // subType=7
+    t('office'), // subType=8
+    t('parking'), // subType=9
+    t('warehouse'), // subType=10
+    t('industrialBuilding'), // subType=11
+    t('plot'), // subType=12
+    t('plotWithBuilding'), // subType=13
+    t('land'), // subType=14
+    t('landWithBuilding'), // subType=15
+    t('hotels'), // subType=16
+  ];
 
   const handleScrape = () => {
+    // Prevent multiple clicks
+    if (isLoading || isScrapingDisabled) {
+      return;
+    }
+
     // Construct region parameter using region_value
     let regionParam = "";
-    if (region !== "Select All") {
+    if (region !== 'Select All') {
       const regionData = region_municipality_map[region];
       if (regionData && regionData.region_value) {
         regionParam = `&extendedFilter1=1,1,${regionData.region_value}`;
@@ -89,7 +110,7 @@ const Filters = ({
 
     // Construct property type parameter
     let propertyParam = "";
-    if (propertyType !== "Select All") {
+    if (propertyType !== t('selectAll')) {
       const propertyIndex = propertyTypes.indexOf(propertyType);
       if (propertyIndex > 0) {
         const subTypeValue = propertyIndex + 4; // Start from 5 (5 = index 1 + 4)
@@ -99,11 +120,11 @@ const Filters = ({
 
     // Construct municipality parameter using municipality value
     let municipalityParam = "";
-    if (municipality !== "Select All" && region !== "Select All") {
+    if (municipality !== 'Select All' && region !== 'Select All') {
       const regionData = region_municipality_map[region];
       if (regionData && Array.isArray(regionData.municipalities)) {
         const munObj = regionData.municipalities.find(
-          (m) => m.name === municipality
+          (m) => m.name_gr === municipality
         );
         if (munObj && munObj.value) {
           municipalityParam = `&extendedFilter2=1,2,${munObj.value}`;
@@ -130,6 +151,34 @@ const Filters = ({
     }
   };
 
+  // Get button text and icon based on state
+  const getButtonContent = () => {
+    if (isLoading) {
+      return (
+        <>
+          <LoaderIcon className="w-5 h-5 animate-spin" />
+          {t('scraping')}
+        </>
+      );
+    }
+    
+    if (isScrapingDisabled && timeLeft) {
+      return (
+        <>
+          <ClockIcon className="w-5 h-5" />
+          {t('waitBeforeNextScrape', { timeLeft })}
+        </>
+      );
+    }
+    
+    return (
+      <>
+        <SearchIcon className="w-5 h-5" />
+        {t('startScraping')}
+      </>
+    );
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg border border-gray-200 mb-8">
       <div className="p-6 border-b border-gray-200">
@@ -137,7 +186,7 @@ const Filters = ({
           <div className="flex items-center gap-2">
             <FilterIcon className="w-5 h-5 text-gray-600" />
             <h2 className="text-xl font-semibold text-gray-800">
-              Search Filters
+              {t('searchFilters')}
             </h2>
           </div>
           {hasActiveFilters && (
@@ -147,7 +196,7 @@ const Filters = ({
               className="text-gray-600 hover:text-gray-800 border-gray-300 hover:bg-gray-50 flex items-center gap-2"
             >
               <XIcon className="w-4 h-4" />
-              Clear Filters
+              {t('clearFilters')}
             </Button>
           )}
         </div>
@@ -157,7 +206,7 @@ const Filters = ({
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <CalendarIcon className="w-4 h-4 inline mr-1" />
-              Date of Conduct From
+              {t('dateOfConductFrom')}
             </label>
             <div className="relative">
               <input
@@ -174,7 +223,7 @@ const Filters = ({
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <CalendarIcon className="w-4 h-4 inline mr-1" />
-              Date of Conduct To
+              {t('dateOfConductTo')}
             </label>
             <div className="relative">
               <input
@@ -191,7 +240,7 @@ const Filters = ({
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <CalendarIcon className="w-4 h-4 inline mr-1" />
-              Date of Posting From
+              {t('dateOfPostingFrom')}
             </label>
             <div className="relative">
               <input
@@ -207,7 +256,7 @@ const Filters = ({
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <CalendarIcon className="w-4 h-4 inline mr-1" />
-              Date of Posting To
+              {t('dateOfPostingTo')}
             </label>
             <div className="relative">
               <input
@@ -222,24 +271,24 @@ const Filters = ({
           {/* Sort By */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Sort By
+              {t('sortBy')}
             </label>
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
             >
-              <option value="priceAsc">Starting Price (ascending)</option>
-              <option value="priceDesc">Starting Price (descending)</option>
-              <option value="auctionDateAsc">Auction Date (ascending)</option>
-              <option value="auctionDateDesc">Auction Date (descending)</option>
+              <option value="priceAsc">{t('startingPriceAsc')}</option>
+              <option value="priceDesc">{t('startingPriceDesc')}</option>
+              <option value="auctionDateAsc">{t('auctionDateAsc')}</option>
+              <option value="auctionDateDesc">{t('auctionDateDesc')}</option>
             </select>
           </div>
 
           {/* Page Number */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Page Number
+              {t('pageNumber')}
             </label>
             <input
               type="number"
@@ -253,7 +302,7 @@ const Filters = ({
           {/* Property Type */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Property Type
+              {t('propertyType')}
             </label>
             <select
               value={propertyType}
@@ -271,16 +320,16 @@ const Filters = ({
           {/* Region */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Region
+              {t('region')}
             </label>
             <select
               value={region}
               onChange={(e) => setRegion(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
             >
-              {regions.map((r, idx) => (
-                <option key={idx} value={r}>
-                  {r}
+              {regionOptions.map((r, idx) => (
+                <option key={idx} value={r.value}>
+                  {r.label}
                 </option>
               ))}
             </select>
@@ -289,17 +338,17 @@ const Filters = ({
           {/* Municipality */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Municipality
+              {t('municipality')}
             </label>
             <select
               value={municipality}
               onChange={(e) => setMunicipality(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors bg-white"
-              disabled={region === "Select All"}
+              disabled={region === 'Select All'}
             >
               {municipalities.map((m, idx) => (
-                <option key={idx} value={m}>
-                  {m}
+                <option key={idx} value={m.value}>
+                  {m.label}
                 </option>
               ))}
             </select>
@@ -311,20 +360,15 @@ const Filters = ({
       <div className="p-6">
         <Button
           onClick={handleScrape}
-          disabled={isLoading}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2"
+          disabled={isScrapingDisabled}
+          className={`px-8 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 ${
+            isScrapingDisabled 
+              ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
+          title={isScrapingDisabled && timeLeft ? t('waitBeforeNextScrape', { timeLeft }) : ''}
         >
-          {isLoading ? (
-            <>
-              <LoaderIcon className="w-5 h-5 animate-spin" />
-              Scraping...
-            </>
-          ) : (
-            <>
-              <SearchIcon className="w-5 h-5" />
-              Start Scraping
-            </>
-          )}
+          {getButtonContent()}
         </Button>
       </div>
     </div>
