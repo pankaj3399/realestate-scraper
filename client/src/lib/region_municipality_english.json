@@ -1,0 +1,1367 @@
+{
+    "Eastern Macedonia & Thrace": {
+      "region_value": "1",
+      "municipalities": [
+        {
+          "name": "Avdira",
+          "value": "14"
+        },
+        {
+          "name": "Alexandroupoli",
+          "value": "15"
+        },
+        {
+          "name": "Arrianoi",
+          "value": "16"
+        },
+        {
+          "name": "Didymoteicho",
+          "value": "17"
+        },
+        {
+          "name": "Doxato",
+          "value": "18"
+        },
+        {
+          "name": "Drama",
+          "value": "19"
+        },
+        {
+          "name": "Thasos",
+          "value": "20"
+        },
+        {
+          "name": "Iasmos",
+          "value": "21"
+        },
+        {
+          "name": "Kavala",
+          "value": "22"
+        },
+        {
+          "name": "Kato Nevrokopi",
+          "value": "23"
+        },
+        {
+          "name": "Komotini",
+          "value": "24"
+        },
+        {
+          "name": "Maroneia - Sapes",
+          "value": "25"
+        },
+        {
+          "name": "Myki",
+          "value": "26"
+        },
+        {
+          "name": "Nestos",
+          "value": "27"
+        },
+        {
+          "name": "Xanthi",
+          "value": "28"
+        },
+        {
+          "name": "Orestiada",
+          "value": "29"
+        },
+        {
+          "name": "Pangaio",
+          "value": "30"
+        },
+        {
+          "name": "Paranesti",
+          "value": "31"
+        },
+        {
+          "name": "Prosotsani",
+          "value": "32"
+        },
+        {
+          "name": "Samothraki",
+          "value": "33"
+        },
+        {
+          "name": "Soufli",
+          "value": "34"
+        },
+        {
+          "name": "Topeiros",
+          "value": "35"
+        }
+      ]
+    },
+    "Attica": {
+      "region_value": "2",
+      "municipalities": [
+        {
+          "name": "Agia Varvara",
+          "value": "355"
+        },
+        {
+          "name": "Agia Paraskevi",
+          "value": "36"
+        },
+        {
+          "name": "Agios Dimitrios",
+          "value": "37"
+        },
+        {
+          "name": "Agioi Anargyroi - Kamatero",
+          "value": "38"
+        },
+        {
+          "name": "Agkistri",
+          "value": "39"
+        },
+        {
+          "name": "Athens",
+          "value": "40"
+        },
+        {
+          "name": "Egaleo",
+          "value": "41"
+        },
+        {
+          "name": "Aegina",
+          "value": "42"
+        },
+        {
+          "name": "Alimos",
+          "value": "43"
+        },
+        {
+          "name": "Amarousi",
+          "value": "44"
+        },
+        {
+          "name": "Aspropyrgos",
+          "value": "45"
+        },
+        {
+          "name": "Acharnes",
+          "value": "46"
+        },
+        {
+          "name": "Vari - Voula - Vouliagmeni",
+          "value": "47"
+        },
+        {
+          "name": "Vrilissia",
+          "value": "48"
+        },
+        {
+          "name": "Byron",
+          "value": "49"
+        },
+        {
+          "name": "Galatsi",
+          "value": "50"
+        },
+        {
+          "name": "Glyfada",
+          "value": "51"
+        },
+        {
+          "name": "Dafni - Ymittos",
+          "value": "52"
+        },
+        {
+          "name": "Dionysos",
+          "value": "53"
+        },
+        {
+          "name": "Elefsina",
+          "value": "54"
+        },
+        {
+          "name": "Elliniko - Argyroupoli",
+          "value": "55"
+        },
+        {
+          "name": "Zografou",
+          "value": "56"
+        },
+        {
+          "name": "Ilioupoli",
+          "value": "57"
+        },
+        {
+          "name": "Heraklion",
+          "value": "58"
+        },
+        {
+          "name": "Ilion",
+          "value": "59"
+        },
+        {
+          "name": "Kaisariani",
+          "value": "60"
+        },
+        {
+          "name": "Kallithea",
+          "value": "61"
+        },
+        {
+          "name": "Keratsini - Drapetsona",
+          "value": "62"
+        },
+        {
+          "name": "Kifisia",
+          "value": "63"
+        },
+        {
+          "name": "Korydallos",
+          "value": "64"
+        },
+        {
+          "name": "Kropia",
+          "value": "65"
+        },
+        {
+          "name": "Kythira",
+          "value": "66"
+        },
+        {
+          "name": "Lavreotiki",
+          "value": "67"
+        },
+        {
+          "name": "Lykovrysi - Pefki",
+          "value": "68"
+        },
+        {
+          "name": "Mandra - Eidyllia",
+          "value": "69"
+        },
+        {
+          "name": "Marathon",
+          "value": "70"
+        },
+        {
+          "name": "Markopoulo Mesogaias",
+          "value": "71"
+        },
+        {
+          "name": "Megara",
+          "value": "72"
+        },
+        {
+          "name": "Metamorfosi",
+          "value": "73"
+        },
+        {
+          "name": "Moschato - Tavros",
+          "value": "74"
+        },
+        {
+          "name": "Nea Ionia",
+          "value": "75"
+        },
+        {
+          "name": "Nea Smyrni",
+          "value": "76"
+        },
+        {
+          "name": "Nikaia - Agios Ioannis Rentis",
+          "value": "77"
+        },
+        {
+          "name": "Paiania",
+          "value": "78"
+        },
+        {
+          "name": "Paleo Faliro",
+          "value": "79"
+        },
+        {
+          "name": "Pallini",
+          "value": "80"
+        },
+        {
+          "name": "Papagou - Cholargos",
+          "value": "81"
+        },
+        {
+          "name": "Piraeus",
+          "value": "82"
+        },
+        {
+          "name": "Penteli",
+          "value": "83"
+        },
+        {
+          "name": "Perama",
+          "value": "84"
+        },
+        {
+          "name": "Peristeri",
+          "value": "85"
+        },
+        {
+          "name": "Petroupoli",
+          "value": "86"
+        },
+        {
+          "name": "Poros",
+          "value": "87"
+        },
+        {
+          "name": "Rafina - Pikermi",
+          "value": "88"
+        },
+        {
+          "name": "Salamina",
+          "value": "89"
+        },
+        {
+          "name": "Saronikos",
+          "value": "90"
+        },
+        {
+          "name": "Spata - Artemida",
+          "value": "91"
+        },
+        {
+          "name": "Spetses",
+          "value": "92"
+        },
+        {
+          "name": "Troizinia - Methana",
+          "value": "93"
+        },
+        {
+          "name": "Hydra",
+          "value": "94"
+        },
+        {
+          "name": "Filadelfia - Chalkidona",
+          "value": "95"
+        },
+        {
+          "name": "Filothei - Psychiko",
+          "value": "96"
+        },
+        {
+          "name": "Fyli",
+          "value": "97"
+        },
+        {
+          "name": "Chaidari",
+          "value": "98"
+        },
+        {
+          "name": "Chalandri",
+          "value": "99"
+        },
+        {
+          "name": "Oropos",
+          "value": "100"
+        }
+      ]
+    },
+    "North Aegean": {
+      "region_value": "3",
+      "municipalities": [
+        {
+          "name": "Agios Efstratios",
+          "value": "101"
+        },
+        {
+          "name": "Ikaria",
+          "value": "102"
+        },
+        {
+          "name": "Lesvos",
+          "value": "103"
+        },
+        {
+          "name": "Limnos",
+          "value": "104"
+        },
+        {
+          "name": "Oinousses",
+          "value": "105"
+        },
+        {
+          "name": "Samos",
+          "value": "106"
+        },
+        {
+          "name": "Fourni Korseon",
+          "value": "107"
+        },
+        {
+          "name": "Chios",
+          "value": "108"
+        },
+        {
+          "name": "Psara",
+          "value": "109"
+        }
+      ]
+    },
+    "Western Greece": {
+      "region_value": "4",
+      "municipalities": [
+        {
+          "name": "Agrinio",
+          "value": "110"
+        },
+        {
+          "name": "Aigialeia",
+          "value": "111"
+        },
+        {
+          "name": "Aktio - Vonitsa",
+          "value": "112"
+        },
+        {
+          "name": "Amfilochia",
+          "value": "113"
+        },
+        {
+          "name": "Andravida - Kyllini",
+          "value": "114"
+        },
+        {
+          "name": "Andritsaina - Krestena",
+          "value": "115"
+        },
+        {
+          "name": "Ancient Olympia",
+          "value": "116"
+        },
+        {
+          "name": "Western Achaea",
+          "value": "117"
+        },
+        {
+          "name": "Erymanthos",
+          "value": "118"
+        },
+        {
+          "name": "Zacharo",
+          "value": "119"
+        },
+        {
+          "name": "Ilida",
+          "value": "120"
+        },
+        {
+          "name": "Thermos",
+          "value": "121"
+        },
+        {
+          "name": "Sacred City of Messolonghi",
+          "value": "122"
+        },
+        {
+          "name": "Kalavryta",
+          "value": "123"
+        },
+        {
+          "name": "Nafpaktia",
+          "value": "124"
+        },
+        {
+          "name": "Xiromero",
+          "value": "125"
+        },
+        {
+          "name": "Patras",
+          "value": "126"
+        },
+        {
+          "name": "Pinios",
+          "value": "127"
+        },
+        {
+          "name": "Pyrgos",
+          "value": "128"
+        }
+      ]
+    },
+    "Western Macedonia": {
+      "region_value": "5",
+      "municipalities": [
+        {
+          "name": "Amyntaio",
+          "value": "129"
+        },
+        {
+          "name": "Argos Orestiko",
+          "value": "130"
+        },
+        {
+          "name": "Voio",
+          "value": "131"
+        },
+        {
+          "name": "Grevena",
+          "value": "132"
+        },
+        {
+          "name": "Deskati",
+          "value": "133"
+        },
+        {
+          "name": "Eordaia",
+          "value": "134"
+        },
+        {
+          "name": "Kastoria",
+          "value": "135"
+        },
+        {
+          "name": "Kozani",
+          "value": "136"
+        },
+        {
+          "name": "Nestorios",
+          "value": "137"
+        },
+        {
+          "name": "Prespes",
+          "value": "138"
+        },
+        {
+          "name": "Servia - Velventos",
+          "value": "139"
+        },
+        {
+          "name": "Florina",
+          "value": "140"
+        }
+      ]
+    },
+    "Epirus": {
+      "region_value": "6",
+      "municipalities": [
+        {
+          "name": "Arta",
+          "value": "141"
+        },
+        {
+          "name": "North Tzoumerka",
+          "value": "142"
+        },
+        {
+          "name": "Georgios Karaiskakis",
+          "value": "143"
+        },
+        {
+          "name": "Dodoni",
+          "value": "144"
+        },
+        {
+          "name": "Zagori",
+          "value": "145"
+        },
+        {
+          "name": "Ziros",
+          "value": "146"
+        },
+        {
+          "name": "Zitsa",
+          "value": "147"
+        },
+        {
+          "name": "Igoumenitsa",
+          "value": "148"
+        },
+        {
+          "name": "Ioannina",
+          "value": "149"
+        },
+        {
+          "name": "Central Tzoumerka",
+          "value": "150"
+        },
+        {
+          "name": "Konitsa",
+          "value": "151"
+        },
+        {
+          "name": "Metsovo",
+          "value": "152"
+        },
+        {
+          "name": "Nikolaos Skoufas",
+          "value": "153"
+        },
+        {
+          "name": "Parga",
+          "value": "154"
+        },
+        {
+          "name": "Preveza",
+          "value": "155"
+        },
+        {
+          "name": "Pogoni",
+          "value": "156"
+        },
+        {
+          "name": "Souli",
+          "value": "157"
+        },
+        {
+          "name": "Filiates",
+          "value": "158"
+        }
+      ]
+    },
+    "Thessaly": {
+      "region_value": "7",
+      "municipalities": [
+        {
+          "name": "Agia",
+          "value": "159"
+        },
+        {
+          "name": "Almyros",
+          "value": "160"
+        },
+        {
+          "name": "Alonnisos",
+          "value": "161"
+        },
+        {
+          "name": "Argithea",
+          "value": "162"
+        },
+        {
+          "name": "Volos",
+          "value": "163"
+        },
+        {
+          "name": "Elassona",
+          "value": "164"
+        },
+        {
+          "name": "Zagora - Mouresi",
+          "value": "165"
+        },
+        {
+          "name": "Meteora",
+          "value": "166"
+        },
+        {
+          "name": "Karditsa",
+          "value": "167"
+        },
+        {
+          "name": "Kileler",
+          "value": "168"
+        },
+        {
+          "name": "Larissa",
+          "value": "169"
+        },
+        {
+          "name": "Lake Plastira",
+          "value": "170"
+        },
+        {
+          "name": "Mouzaki",
+          "value": "171"
+        },
+        {
+          "name": "South Pelion",
+          "value": "172"
+        },
+        {
+          "name": "Palamas",
+          "value": "173"
+        },
+        {
+          "name": "Pyli",
+          "value": "174"
+        },
+        {
+          "name": "Rigas Feraios",
+          "value": "175"
+        },
+        {
+          "name": "Skiathos",
+          "value": "176"
+        },
+        {
+          "name": "Skopelos",
+          "value": "177"
+        },
+        {
+          "name": "Sofades",
+          "value": "178"
+        },
+        {
+          "name": "Trikala",
+          "value": "179"
+        },
+        {
+          "name": "Tyrnavos",
+          "value": "180"
+        },
+        {
+          "name": "Farkadona",
+          "value": "181"
+        },
+        {
+          "name": "Farsala",
+          "value": "182"
+        },
+        {
+          "name": "Tempi",
+          "value": "183"
+        }
+      ]
+    },
+    "Ionian Islands": {
+      "region_value": "8",
+      "municipalities": [
+        {
+          "name": "Zakynthos",
+          "value": "184"
+        },
+        {
+          "name": "Ithaca",
+          "value": "185"
+        },
+        {
+          "name": "Corfu",
+          "value": "186"
+        },
+        {
+          "name": "Kefalonia",
+          "value": "187"
+        },
+        {
+          "name": "Lefkada",
+          "value": "188"
+        },
+        {
+          "name": "Meganisi",
+          "value": "189"
+        },
+        {
+          "name": "Paxos",
+          "value": "190"
+        }
+      ]
+    },
+    "Central Macedonia": {
+      "region_value": "9",
+      "municipalities": [
+        {
+          "name": "Alexandria",
+          "value": "191"
+        },
+        {
+          "name": "Almopia",
+          "value": "192"
+        },
+        {
+          "name": "Ampelokipoi - Menemeni",
+          "value": "193"
+        },
+        {
+          "name": "Amphipolis",
+          "value": "194"
+        },
+        {
+          "name": "Aristotle",
+          "value": "195"
+        },
+        {
+          "name": "Veria",
+          "value": "196"
+        },
+        {
+          "name": "Visaltia",
+          "value": "197"
+        },
+        {
+          "name": "Volvi",
+          "value": "198"
+        },
+        {
+          "name": "Delta",
+          "value": "199"
+        },
+        {
+          "name": "Dion - Olympus",
+          "value": "200"
+        },
+        {
+          "name": "Edessa",
+          "value": "201"
+        },
+        {
+          "name": "Emmanouel Pappas",
+          "value": "202"
+        },
+        {
+          "name": "Irakleia",
+          "value": "203"
+        },
+        {
+          "name": "Heroic City of Naoussa",
+          "value": "204"
+        },
+        {
+          "name": "Thermaikos",
+          "value": "205"
+        },
+        {
+          "name": "Thermi",
+          "value": "206"
+        },
+        {
+          "name": "Thessaloniki",
+          "value": "207"
+        },
+        {
+          "name": "Kalamaria",
+          "value": "208"
+        },
+        {
+          "name": "Kassandra",
+          "value": "209"
+        },
+        {
+          "name": "Katerini",
+          "value": "210"
+        },
+        {
+          "name": "Kilkis",
+          "value": "211"
+        },
+        {
+          "name": "Kordelio - Evosmos",
+          "value": "212"
+        },
+        {
+          "name": "Lagkadas",
+          "value": "213"
+        },
+        {
+          "name": "Neapolis - Sykeon",
+          "value": "214"
+        },
+        {
+          "name": "Nea Zichni",
+          "value": "215"
+        },
+        {
+          "name": "Nea Propontida",
+          "value": "216"
+        },
+        {
+          "name": "Paionia",
+          "value": "217"
+        },
+        {
+          "name": "Pavlos Melas",
+          "value": "218"
+        },
+        {
+          "name": "Pella",
+          "value": "219"
+        },
+        {
+          "name": "Polygyros",
+          "value": "220"
+        },
+        {
+          "name": "Pydna - Kolindros",
+          "value": "221"
+        },
+        {
+          "name": "Pylaia - Chortiatis",
+          "value": "222"
+        },
+        {
+          "name": "Serres",
+          "value": "223"
+        },
+        {
+          "name": "Sithonia",
+          "value": "224"
+        },
+        {
+          "name": "Sintiki",
+          "value": "225"
+        },
+        {
+          "name": "Skydra",
+          "value": "226"
+        },
+        {
+          "name": "Chalkidona",
+          "value": "227"
+        },
+        {
+          "name": "Oraiokastro",
+          "value": "228"
+        }
+      ]
+    },
+    "Crete": {
+      "region_value": "10",
+      "municipalities": [
+        {
+          "name": "Agios Vasileios",
+          "value": "229"
+        },
+        {
+          "name": "Agios Nikolaos",
+          "value": "230"
+        },
+        {
+          "name": "Amari",
+          "value": "231"
+        },
+        {
+          "name": "Anogeia",
+          "value": "232"
+        },
+        {
+          "name": "Apokoronas",
+          "value": "233"
+        },
+        {
+          "name": "Archanes - Asteroussia",
+          "value": "234"
+        },
+        {
+          "name": "Viannos",
+          "value": "235"
+        },
+        {
+          "name": "Gavdos",
+          "value": "236"
+        },
+        {
+          "name": "Gortyna",
+          "value": "237"
+        },
+        {
+          "name": "Heraklion CRETE",
+          "value": "238"
+        },
+        {
+          "name": "Ierapetra",
+          "value": "239"
+        },
+        {
+          "name": "Kantanos - Selino",
+          "value": "240"
+        },
+        {
+          "name": "Kissamos",
+          "value": "241"
+        },
+        {
+          "name": "Malevizi",
+          "value": "242"
+        },
+        {
+          "name": "Minoa Pediada",
+          "value": "243"
+        },
+        {
+          "name": "Mylopotamos",
+          "value": "244"
+        },
+        {
+          "name": "Oropedio Lasithiou",
+          "value": "245"
+        },
+        {
+          "name": "Platanias",
+          "value": "246"
+        },
+        {
+          "name": "Rethymno",
+          "value": "247"
+        },
+        {
+          "name": "Sitia",
+          "value": "248"
+        },
+        {
+          "name": "Sfakia",
+          "value": "249"
+        },
+        {
+          "name": "Phaistos",
+          "value": "250"
+        },
+        {
+          "name": "Chania",
+          "value": "251"
+        },
+        {
+          "name": "Hersonissos",
+          "value": "252"
+        }
+      ]
+    },
+    "South Aegean": {
+      "region_value": "11",
+      "municipalities": [
+        {
+          "name": "Agathonisi",
+          "value": "253"
+        },
+        {
+          "name": "Amorgos",
+          "value": "254"
+        },
+        {
+          "name": "Anafi",
+          "value": "255"
+        },
+        {
+          "name": "Andros",
+          "value": "256"
+        },
+        {
+          "name": "Antiparos",
+          "value": "257"
+        },
+        {
+          "name": "Astypalaia",
+          "value": "258"
+        },
+        {
+          "name": "Thira",
+          "value": "259"
+        },
+        {
+          "name": "Ios",
+          "value": "260"
+        },
+        {
+          "name": "Kalymnos",
+          "value": "261"
+        },
+        {
+          "name": "Karpathos",
+          "value": "262"
+        },
+        {
+          "name": "Kasos",
+          "value": "263"
+        },
+        {
+          "name": "Kea",
+          "value": "264"
+        },
+        {
+          "name": "Kimolos",
+          "value": "265"
+        },
+        {
+          "name": "Kythnos",
+          "value": "266"
+        },
+        {
+          "name": "Kos",
+          "value": "267"
+        },
+        {
+          "name": "Lipsi",
+          "value": "268"
+        },
+        {
+          "name": "Leros",
+          "value": "269"
+        },
+        {
+          "name": "Megisti",
+          "value": "270"
+        },
+        {
+          "name": "Milos",
+          "value": "271"
+        },
+        {
+          "name": "Mykonos",
+          "value": "272"
+        },
+        {
+          "name": "Naxos & Small Cyclades",
+          "value": "273"
+        },
+        {
+          "name": "Nisyros",
+          "value": "274"
+        },
+        {
+          "name": "Paros",
+          "value": "275"
+        },
+        {
+          "name": "Patmos",
+          "value": "276"
+        },
+        {
+          "name": "Rhodes",
+          "value": "277"
+        },
+        {
+          "name": "Serifos",
+          "value": "278"
+        },
+        {
+          "name": "Sikinos",
+          "value": "279"
+        },
+        {
+          "name": "Sifnos",
+          "value": "280"
+        },
+        {
+          "name": "Symi",
+          "value": "281"
+        },
+        {
+          "name": "Syros - Ermoupolis",
+          "value": "282"
+        },
+        {
+          "name": "Tilos",
+          "value": "283"
+        },
+        {
+          "name": "Tinos",
+          "value": "284"
+        },
+        {
+          "name": "Folegandros",
+          "value": "285"
+        },
+        {
+          "name": "Chalki",
+          "value": "286"
+        }
+      ]
+    },
+    "Peloponnese": {
+      "region_value": "12",
+      "municipalities": [
+        {
+          "name": "East Mani",
+          "value": "287"
+        },
+        {
+          "name": "Argos - Mykines",
+          "value": "288"
+        },
+        {
+          "name": "Velo - Vocha",
+          "value": "289"
+        },
+        {
+          "name": "North Kynouria",
+          "value": "290"
+        },
+        {
+          "name": "Gortynia",
+          "value": "291"
+        },
+        {
+          "name": "West Mani",
+          "value": "292"
+        },
+        {
+          "name": "Elafonisos",
+          "value": "293"
+        },
+        {
+          "name": "Epidaurus",
+          "value": "294"
+        },
+        {
+          "name": "Ermionida",
+          "value": "295"
+        },
+        {
+          "name": "Evrotas",
+          "value": "296"
+        },
+        {
+          "name": "Kalamata",
+          "value": "297"
+        },
+        {
+          "name": "Corinth",
+          "value": "298"
+        },
+        {
+          "name": "Loutraki - Perachora - Agioi Theodoroi",
+          "value": "299"
+        },
+        {
+          "name": "Megalopolis",
+          "value": "300"
+        },
+        {
+          "name": "Messini",
+          "value": "301"
+        },
+        {
+          "name": "Monemvasia",
+          "value": "302"
+        },
+        {
+          "name": "Nafplio",
+          "value": "303"
+        },
+        {
+          "name": "Nemea",
+          "value": "304"
+        },
+        {
+          "name": "South Kynouria",
+          "value": "305"
+        },
+        {
+          "name": "Xylokastro - Evrostina",
+          "value": "306"
+        },
+        {
+          "name": "Oichalia",
+          "value": "307"
+        },
+        {
+          "name": "Pylos - Nestor",
+          "value": "308"
+        },
+        {
+          "name": "Sicyon",
+          "value": "309"
+        },
+        {
+          "name": "Sparta",
+          "value": "310"
+        },
+        {
+          "name": "Tripoli",
+          "value": "311"
+        },
+        {
+          "name": "Trifylia",
+          "value": "312"
+        }
+      ]
+    },
+    "Central Greece": {
+      "region_value": "13",
+      "municipalities": [
+        {
+          "name": "Agrafa",
+          "value": "313"
+        },
+        {
+          "name": "Aliartos - Thespies",
+          "value": "314"
+        },
+        {
+          "name": "Amfikleia - Elateia",
+          "value": "315"
+        },
+        {
+          "name": "Delphi",
+          "value": "316"
+        },
+        {
+          "name": "Dirfys - Messapia",
+          "value": "317"
+        },
+        {
+          "name": "Distomo - Arachova - Antikyra",
+          "value": "318"
+        },
+        {
+          "name": "Domokos",
+          "value": "319"
+        },
+        {
+          "name": "Dorida",
+          "value": "320"
+        },
+        {
+          "name": "Eretria",
+          "value": "321"
+        },
+        {
+          "name": "Thebes",
+          "value": "322"
+        },
+        {
+          "name": "Istiaia - Aidipsos",
+          "value": "323"
+        },
+        {
+          "name": "Karpenisi",
+          "value": "324"
+        },
+        {
+          "name": "Karystos",
+          "value": "325"
+        },
+        {
+          "name": "Kymi - Aliveri",
+          "value": "326"
+        },
+        {
+          "name": "Lamia",
+          "value": "327"
+        },
+        {
+          "name": "Livadeia",
+          "value": "328"
+        },
+        {
+          "name": "Lokroi",
+          "value": "329"
+        },
+        {
+          "name": "Makrakomi",
+          "value": "330"
+        },
+        {
+          "name": "Mantoudi - Limni - Agia Anna",
+          "value": "331"
+        },
+        {
+          "name": "Kamena Vourla",
+          "value": "332"
+        },
+        {
+          "name": "Orchomenos",
+          "value": "333"
+        },
+        {
+          "name": "Skyros",
+          "value": "334"
+        },
+        {
+          "name": "Stylida",
+          "value": "335"
+        },
+        {
+          "name": "Tanagra",
+          "value": "336"
+        },
+        {
+          "name": "Chalkida",
+          "value": "337"
+        }
+      ]
+    }
+  }

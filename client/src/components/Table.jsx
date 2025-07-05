@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { CSVLink } from "react-csv";
 import * as XLSX from "xlsx";
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,7 @@ import {
 } from "lucide-react";
 
 const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange, hasSearched }) => {
+  const { t } = useTranslation();
   const resultArray = Array.isArray(results.results) ? results.results : [];
   const totalResults = results.total_results || 0;
   // Post-scraping filter states
@@ -154,11 +156,11 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
     { label: "Simple Tag", key: "simple_tag" },
     { label: "Code", key: "code" },
     { label: "Part #", key: "part_number" },
-    { label: "Auction Date", key: "date" },
+    { label: t('date'), key: "date" },
     { label: "Post Date", key: "post_date" },
-    { label: "Starting Price", key: "price" },
+    { label: t('price'), key: "price" },
     { label: "Auction Object", key: "auction_object" },
-    { label: "Property Type", key: "property_type" },
+    { label: t('propertyType'), key: "property_type" },
     { label: "Address", key: "address" },
     { label: "Area (m²)", key: "property_area" },
     { label: "Price per m²", key: "price_per_sqm" },
@@ -286,8 +288,8 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
     return (
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8 text-center">
         <Grid3X3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No Results</h3>
-        <p className="text-gray-500">No auction data available to display.</p>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noResults')}</h3>
+        <p className="text-gray-500">{t('noResults')}</p>
       </div>
     );
   }
@@ -304,10 +306,10 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  Auction Results
+                  {t('auctionResults')}
                 </h2>
                 <p className="text-sm text-gray-600">
-                  Showing {filteredResults.length} of {resultArray.length} auctions
+                  {t('showing')} {filteredResults.length} {t('of')} {resultArray.length} {t('results')}
                 </p>
               </div>
             </div>
@@ -319,14 +321,14 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
               >
                 <Download className="w-4 h-4" />
-                CSV
+                {t('exportToCSV')}
               </CSVLink>
               <button
                 onClick={handleExcelExport}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
               >
                 <Download className="w-4 h-4" />
-                Excel
+                {t('exportToExcel')}
               </button>
               {hasActiveFilters && (
                 <button
@@ -334,7 +336,7 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                   className="flex items-center gap-2 px-4 py-2 bg-white text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                 >
                   <X className="w-4 h-4" />
-                  Clear Filters
+                  {t('clearFilters')}
                 </button>
               )}
             </div>
@@ -455,52 +457,52 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  AI Label
+                  {t('aiLabel')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Simple Tag
+                  {t('simpleTag')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Code
+                  {t('code')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Part #
+                  {t('partNumber')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Auction Date
+                  {t('auctionDate')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Post Date
+                  {t('postDate')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Starting Price
+                  {t('startingPrice')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Auction Object
+                  {t('auctionObject')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Property Type
+                  {t('propertyType')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Address
+                  {t('address')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Area (m²)
+                  {t('area')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Price per m²
+                  {t('pricePerSqm')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Occupancy
+                  {t('occupancyStatus')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Description
+                  {t('description')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  Notes
+                  {t('notes')}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  URL
+                  {t('url')}
                 </th>
               </tr>
             </thead>
@@ -625,13 +627,13 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                           <button
                             onClick={() =>
                               setModalData({
-                                title: "Property Description",
+                                title: t('propertyDescription'),
                                 content: item.property_description,
                               })
                             }
                             className="text-blue-600 hover:underline text-xs mt-1 inline-flex items-center gap-1"
                           >
-                            Read more <BookText className="w-3 h-3" />
+                            {t('readMore')} <BookText className="w-3 h-3" />
                           </button>
                         )}
                       </div>
@@ -647,13 +649,13 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                           <button
                             onClick={() =>
                               setModalData({
-                                title: "Notes",
+                                title: t('notes'),
                                 content: item.notes,
                               })
                             }
                             className="text-blue-600 hover:underline text-xs mt-1 inline-flex items-center gap-1"
                           >
-                            Read more <BookText className="w-3 h-3" />
+                            {t('readMore')} <BookText className="w-3 h-3" />
                           </button>
                         )}
                       </div>
@@ -677,7 +679,7 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                           ))}
                         </div>
                       ) : (
-                        <span className="text-gray-400 text-xs">No PDFs</span>
+                        <span className="text-gray-400 text-xs">{t('noPdfs')}</span>
                       )}
                     </td> */}
 
@@ -699,7 +701,7 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                           ))}
                         </div>
                       ) : (
-                        <span className="text-gray-400 text-xs">No PDFs</span>
+                        <span className="text-gray-400 text-xs">{t('noPdfs')}</span>
                       )}
                     </td>
 
@@ -727,16 +729,16 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
             <div className="p-8 text-center bg-gray-50">
               <Filter className="w-12 h-12 text-gray-400 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
-                No Results Found
+                {t('noResultsFound')}
               </h3>
               <p className="text-gray-500 mb-4">
-                Try adjusting your filters to see more results.
+                {t('tryAdjustingFilters')}
               </p>
               <button
                 onClick={clearPostFilters}
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
               >
-                Clear All Filters
+                {t('clearAllFilters')}
               </button>
             </div>
           )}
