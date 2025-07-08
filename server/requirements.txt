@@ -2,4 +2,6 @@ Flask
 playwright
 google-generativeai
 PyPDF2
-requests 
+requests
+python-dotenv
+flask_cors 
