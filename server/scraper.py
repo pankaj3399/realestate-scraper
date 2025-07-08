@@ -9,7 +9,13 @@ import random
 import time
 import json
 import re
+from dotenv import load_dotenv
 
+# BYPASS_HUMAN_BEHAVIOR: If True, all delays and human-like waits are skipped
+BYPASS_HUMAN_BEHAVIOR = False  # Set to True to skip all waits and scraping is instant
+
+load_dotenv()
+print(BYPASS_HUMAN_BEHAVIOR)
 
 def format_date(date_str):
     """Convert YYYY-MM-DD to DD/MM/YYYY format"""
@@ -143,14 +149,18 @@ def get_random_user_agent():
 
 
 def human_like_delay(min_seconds=0.5, max_seconds=2):
-    """Sleep for a random amount of time to simulate human behavior"""
+    """Sleep for a random amount of time to simulate human behavior, unless bypassed"""
+    if BYPASS_HUMAN_BEHAVIOR:
+        return
     delay = random.uniform(min_seconds, max_seconds)
     print(f"Waiting {delay:.2f} seconds...")
     time.sleep(delay)
 
 
 def simulate_human_scrolling(page):
-    """Simulate human-like scrolling behavior"""
+    """Simulate human-like scrolling behavior, unless bypassed"""
+    if BYPASS_HUMAN_BEHAVIOR:
+        return
     try:
         # Random scroll down
         scroll_distance = random.randint(200, 600)
@@ -167,7 +177,9 @@ def simulate_human_scrolling(page):
 
 
 def simulate_mouse_movement(page):
-    """Simulate random mouse movements"""
+    """Simulate random mouse movements, unless bypassed"""
+    if BYPASS_HUMAN_BEHAVIOR:
+        return
     try:
         # Move mouse to random positions
         for _ in range(random.randint(1, 2)):  # Reduced from 1-3 to 1-2
@@ -760,10 +772,11 @@ def configure_gemini():
 
 
 def download_and_extract_pdf_text(pdf_url):
-    """Download PDF and extract text content with human-like delays"""
+    """Download PDF and extract text content with human-like delays, unless bypassed"""
     try:
         # Add random delay before downloading
-        time.sleep(random.uniform(0.3, 0.8))
+        if not BYPASS_HUMAN_BEHAVIOR:
+            time.sleep(random.uniform(0.3, 0.8))
 
         # Set headers to mimic a real browser
         headers = {
@@ -794,13 +807,14 @@ def download_and_extract_pdf_text(pdf_url):
 
 
 def analyze_pdf_with_gemini(text_content, model):
-    """Analyze PDF content using Gemini with better prompt structure and few-shot guidance."""
+    """Analyze PDF content using Gemini with better prompt structure and few-shot guidance. Respects bypass flag."""
     if not model or not text_content:
         return None
 
     try:
         # Add delay to respect API rate limits
-        time.sleep(random.uniform(0.4, 0.8))  # Reduced from 0.8-1.5
+        if not BYPASS_HUMAN_BEHAVIOR:
+            time.sleep(random.uniform(0.4, 0.8))  # Reduced from 0.8-1.5
 
         # Clean and trim text to stay within token limits
         cleaned_text = "\n".join(
@@ -812,29 +826,31 @@ def analyze_pdf_with_gemini(text_content, model):
 You are a real estate analyst. Analyze the following Greek auction document and extract structured information.
 
 Return a valid JSON with the following keys:
-- "property_area": Total area in square meters (combine if multiple). Use only numbers as float (e.g., 130.06). If not found, return null.
+- "property_area": Total area in square meters (combine if multiple, e.g., for multiple floors or spaces). Use only numbers as float (e.g., 130.06). Accept formats like "εμβαδόν 88,52 τ.μ.", "88,52 τ.μ.", "συνολική επιφάνεια 124,35". If not found, return null.
 - "starting_price": Starting price in euros. Use only numbers as float (e.g., 123000.0). If not found, return null.
-- "address": Street, number, area. Combine multiple lines if needed. If not found, return "N/A".
+- "address": Street, number, area. Combine multiple lines if needed. Normalize and clean address fields (remove extra line breaks, labels like "Οδός", etc.). If not found, return "N/A".
 - "property_description": One or two sentence description of the property usage/type/location. If not found, return "N/A".
-- "notes": Any special conditions or clauses like rights, restrictions, mortgages, etc. If not found, return "N/A".
-- "occupancy_status": 
-  - If contains: "κατοικείται", "ένοικος", or "μισθωτήριο" → return "Κατοικείται"
-  - If contains: "ακατοίκητο" → return "Ακατοίκητο"
-  - If contains: "εκκενωμένο" → return "Εκκενωμένο"
+- "notes": Any special conditions or clauses like rights, restrictions, mortgages, liens, third-party rights, servitudes, pending legal issues, or if the auction is related to debt, mortgage, or enforcement. If not found, return "N/A".
+- "occupancy_status":
+  - If text contains: "κατοικείται", "ένοικος", "μισθωτήριο", "ενοικιαστής", "διαμένει" → return "Κατοικείται"
+  - If contains: "ακατοίκητο", "μη κατοικούμενο", "χωρίς χρήση" → return "Ακατοίκητο"
+  - If contains: "εκκενωμένο", "εκκενώθηκε" → return "Εκκενωμένο"
   - Otherwise → return "N/A"
-- "is_bankruptcy": true if the text contains "πτώχευση", "εκκαθάριση", or "ειδική διαχείριση", otherwise false.
-- "property_type": The specific type of property (e.g., "Διαμέρισμα", "Οικόπεδο", "Αγροτεμάχιο"). If not found, return "N/A".
+- "is_bankruptcy": true if the text contains any of the following: "πτώχευση", "εκκαθάριση", "ειδική διαχείριση", "πτωχευτική διαδικασία", "υπό εκκαθάριση", "λύση εταιρείας", otherwise false.
+- "property_type": The specific type of property (e.g., "Διαμέρισμα", "Οικόπεδο", "Αγροτεμάχιο", "Κατάστημα", "Μονοκατοικία"). Try to infer from descriptions even if not explicit. If not found, return "N/A".
 
-IMPORTANT: For Greek numbers, convert to standard format:
-- Greek "94.000,50" should become 94000.5
-- Greek "130,50" should become 130.5
-- Always return numbers as floats, not strings
+ADDITIONAL RULES:
+- For Greek numbers like "94.000,50", convert to float: 94000.5
+- Accept formats like "εμβαδόν 88,52 τ.μ.", "88,52 τ.μ.", "συνολική επιφάνεια 124,35"
+- If multiple areas are mentioned (e.g., 2 floors), sum them.
+- Normalize and clean address fields (remove extra line breaks, labels like "Οδός", etc.)
+- If auction is related to debt, mortgage, enforcement, extract that into "notes".
 
 Example output format:
 {
   "property_area": 344.06,
   "starting_price": 123000.0,
-  "address": "Οδός Παπαζαχαρίου 54, Λάρισα, Φιλιππούπολη",
+  "address": "Παπαζαχαρίου 54, Λάρισα, Φιλιππούπολη",
   "property_description": "Διαμέρισμα πρώτου ορόφου, κατάλληλο για κατοικία.",
   "notes": "Υπάρχει υποθήκη υπέρ της Συνεταιριστικής Τράπεζας Θεσσαλίας.",
   "occupancy_status": "Κατοικείται",

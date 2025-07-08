@@ -1,6 +1,9 @@
 from flask import Flask, render_template_string, jsonify, request
 from flask_cors import CORS
 from scraper import scrape_auctions
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -67,6 +70,10 @@ def scrape():
     # Get filter parameters from request
     data = request.get_json()  # Use get_json() instead of request.json
     print("Raw request data:", data)  # Debug log
+    
+    # Gemini API key check
+    if not os.getenv("GEMINI_API_KEY"):
+        return jsonify({"error": "Gemini API key is not configured. Please set GEMINI_API_KEY in your environment."}), 400
     
     conduct_from = data.get('conductFrom')
     conduct_to = data.get('conductTo')

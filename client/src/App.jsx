@@ -136,23 +136,32 @@ function App() {
       const data = await response.json();
       setHasSearched(true);
       console.log("Received response:", data);
-      
+
+      // Handle backend error (like missing Gemini key)
+      if (!response.ok && data.error) {
+        setError(data.error);
+        setResults([]);
+        setTotalResults(0);
+        return;
+      }
+
       if (data.results) {
         setResults(data.results);
         setTotalResults(data.total_results || data.results.length);
         if (params.selectedRegion && !data.results.results.some(item => item.region === params.selectedRegion && item.municipality === params.selectedMunicipality)) {
           setMunicipality("");
         }
+        // Set cooldown after successful scrape (8 minutes = 480000ms)
+        const endTime = Date.now() + 480000;
+        setCooldownEndTime(endTime);
+        localStorage.setItem(COOLDOWN_KEY, endTime);
       }
 
-      // Set cooldown after successful scrape (8 minutes = 480000ms)
-      const endTime = Date.now() + 480000;
-      setCooldownEndTime(endTime);
-      localStorage.setItem(COOLDOWN_KEY, endTime);
-      
     } catch (err) {
       setHasSearched(true);
       setError(err.message);
+      setResults([]);
+      setTotalResults(0);
     } finally {
       setIsLoading(false);
     }
