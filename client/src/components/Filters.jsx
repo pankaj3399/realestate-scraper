@@ -1,4 +1,6 @@
 import React from "react";
+import { toast } from 'react-hot-toast';
+
 import { Button } from "@/components/ui/button";
 import {
   Calendar as CalendarIcon,
@@ -22,8 +24,10 @@ const Filters = ({
   setPostingTo,
   sortBy,
   setSortBy,
-  page,
-  setPage,
+  startPage,
+  setStartPage,
+  endPage,
+  setEndPage,
   onScrape,
   isLoading,
   clearFilters,
@@ -77,6 +81,14 @@ const Filters = ({
     }
   }, [region, t, language]);
 
+  // Set default conductFrom to today's date if not already set
+  React.useEffect(() => {
+    if (!conductFrom) {
+      const today = new Date().toISOString().split('T')[0];
+      setConductFrom(today);
+    }
+  }, [conductFrom, setConductFrom]);
+
   const propertyTypes = [
     t('selectAll'),
     t('residence'), // subType=5
@@ -94,6 +106,20 @@ const Filters = ({
   ];
 
   const handleScrape = () => {
+    // Page number validation
+    const start = Number(startPage);
+    const end = Number(endPage);
+
+    if (isNaN(start) || isNaN(end) || start < 1 || end < 1) {
+      toast.error('Please enter valid page numbers.');
+      return;
+    }
+
+    if (start > end) {
+      toast.error('Start page cannot be greater than end page.');
+      return;
+    }
+
     // Prevent multiple clicks
     if (isLoading || isScrapingDisabled) {
       return;
@@ -140,7 +166,8 @@ const Filters = ({
         postingFrom,
         postingTo,
         sortBy,
-        page,
+        startPage, // new
+        endPage,   // new
         regionParam,
         propertyParam,
         municipalityParam,
@@ -285,16 +312,28 @@ const Filters = ({
             </select>
           </div>
 
-          {/* Page Number */}
+          {/* Start Page */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t('pageNumber')}
+              {t('startPage')}
             </label>
             <input
-              type="number"
-              min={1}
-              value={page}
-              onChange={(e) => setPage(Number(e.target.value) || 1)}
+              type="text"
+              value={startPage}
+              onChange={(e) => setStartPage(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+            />
+          </div>
+
+          {/* End Page */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t('endPage')}
+            </label>
+            <input
+              type="text"
+              value={endPage}
+              onChange={(e) => setEndPage(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
             />
           </div>

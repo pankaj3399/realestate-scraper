@@ -19,20 +19,23 @@ import { useTranslation } from 'react-i18next';
 import Filters from "./components/Filters";
 import Table from "./components/Table";
 import LanguageSelector from "./components/LanguageSelector";
+import Toaster from 'react-hot-toast'
 
 const COOLDOWN_KEY = 'cooldownEndTime';
+const RESULTS_KEY = 'auctionResults';
 
 function App() {
   const { t } = useTranslation();
-  const [results, setResults] = useState([]);
-  const [totalResults, setTotalResults] = useState(0);
+  const [results, setResults] = useState({ results: [], total_results: 0 });
+  const [showTable, setShowTable] = useState(false);
+  const [scrapingInProgress, setScrapingInProgress] = useState(false);
   // Filter state
   const [conductFrom, setConductFrom] = useState(null);
   const [conductTo, setConductTo] = useState(null);
   const [postingFrom, setPostingFrom] = useState(null);
   const [postingTo, setPostingTo] = useState(null);
   const [sortBy, setSortBy] = useState("auctionDateAsc");
-  const [page, setPage] = useState(1);
+  // Remove page and setPage state
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   
@@ -42,27 +45,48 @@ function App() {
   const [municipality, setMunicipality] = useState("");
   const [lastScrapeParams, setLastScrapeParams] = useState(null);
   const [hasSearched, setHasSearched] = useState(false);
+  const [scrapingProgress, setScrapingProgress] = useState(""); // new
 
   // Cooldown state for CAPTCHA protection
   const [cooldownEndTime, setCooldownEndTime] = useState(null);
   const [timeLeft, setTimeLeft] = useState(null);
 
-  // On mount, restore cooldown from localStorage if present
+  // Add state for startPage and endPage
+  const [startPage, setStartPage] = useState(1);
+  const [endPage, setEndPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // On mount, restore results and cooldown from localStorage
   useEffect(() => {
-    const stored = localStorage.getItem(COOLDOWN_KEY);
-    if (stored && Number(stored) > Date.now()) {
-      setCooldownEndTime(Number(stored));
+    const storedResults = localStorage.getItem(RESULTS_KEY);
+    if (storedResults) {
+      const parsed = JSON.parse(storedResults);
+      if (parsed.results && parsed.results.length > 0) {
+        setResults(parsed);
+        setShowTable(true);
+      }
+    }
+    
+    const storedCooldown = localStorage.getItem(COOLDOWN_KEY);
+    if (storedCooldown && Number(storedCooldown) > Date.now()) {
+      setCooldownEndTime(Number(storedCooldown));
     }
   }, []);
 
-  // Persist cooldownEndTime to localStorage whenever it changes
+  // Persist results and cooldown to localStorage
   useEffect(() => {
+    if (showTable && results.results.length > 0) {
+      localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
+    } else {
+      localStorage.removeItem(RESULTS_KEY);
+    }
+
     if (cooldownEndTime && cooldownEndTime > Date.now()) {
       localStorage.setItem(COOLDOWN_KEY, cooldownEndTime);
     } else {
       localStorage.removeItem(COOLDOWN_KEY);
     }
-  }, [cooldownEndTime]);
+  }, [results, cooldownEndTime, showTable]);
 
   // Update time left for cooldown
   useEffect(() => {
@@ -102,76 +126,85 @@ function App() {
       return;
     }
 
+    setScrapingInProgress(true);
+    setShowTable(false); // Hide table while scraping
     setIsLoading(true);
-    setResults([]);
+    setResults({ results: [], total_results: 0 });
     setError(null);
-    setLastScrapeParams(params); // Save last used params for pagination
+    setLastScrapeParams(params);
+    setScrapingProgress("");
 
-    const requestData = {
-      conductFrom: params.conductFrom,
-      conductTo: params.conductTo,
-      postingFrom: params.postingFrom,
-      postingTo: params.postingTo,
-      sortBy: params.sortBy,
-      page: params.page,
-      regionParam: params.regionParam,
-      propertyParam: params.propertyParam,
-      municipalityParam: params.municipalityParam,
-      selectedRegion: params.selectedRegion,
-      selectedMunicipality: params.selectedMunicipality,
-      selectedPropertyType: params.selectedPropertyType,
-    };
+    const { startPage, endPage } = params;
+    let allResults = [];
+    let totalAuctions = 0;
 
-    console.log("Sending request with data:", requestData);
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/scrape`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(requestData)
-      });
-
-      const data = await response.json();
-      setHasSearched(true);
-      console.log("Received response:", data);
-
-      // Handle backend error (like missing Gemini key)
-      if (!response.ok && data.error) {
-        setError(data.error);
-        setResults([]);
-        setTotalResults(0);
-        return;
+    for (let currentPage = startPage; currentPage <= endPage; currentPage++) {
+      let progressMsg = '';
+      if (startPage === endPage) {
+        progressMsg = `Scraping page ${currentPage}...`;
+      } else {
+        progressMsg = `Scraping page ${currentPage} of ${endPage}...`;
       }
+      setScrapingProgress(progressMsg);
 
-      if (data.results) {
-        setResults(data.results);
-        setTotalResults(data.total_results || data.results.length);
-        if (params.selectedRegion && !data.results.results.some(item => item.region === params.selectedRegion && item.municipality === params.selectedMunicipality)) {
-          setMunicipality("");
+      const requestData = {
+        ...params,
+        page: currentPage,
+      };
+
+      try {
+        const response = await fetch(`${import.meta.env.VITE_SERVER_URL}/scrape`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestData),
+        });
+
+        const data = await response.json();
+
+        if (!response.ok && data.error) {
+          setError(`Error on page ${currentPage}: ${data.error}`);
+          break; // Stop on error
         }
-        // Set cooldown after successful scrape (8 minutes = 480000ms)
-        const endTime = Date.now() + 480000;
-        setCooldownEndTime(endTime);
-        localStorage.setItem(COOLDOWN_KEY, endTime);
+
+        if (data.results) {
+          allResults = [...allResults, ...data.results];
+          totalAuctions = data.total_results || allResults.length;
+          setResults({ results: allResults, total_results: totalAuctions });
+        } else {
+          // Handle case where data.results is not as expected
+          allResults = [...allResults, ...data];
+          totalAuctions = allResults.length;
+          setResults({ results: allResults, total_results: totalAuctions });
+        }
+
+      } catch (err) {
+        setError(`Failed to scrape page ${currentPage}: ${err.message}`);
+        break; // Stop on error
       }
-
-    } catch (err) {
-      setHasSearched(true);
-      setError(err.message);
-      setResults([]);
-      setTotalResults(0);
-    } finally {
-      setIsLoading(false);
     }
-  }, [isLoading, cooldownEndTime]);
 
-  // Pagination handler
+    setScrapingProgress(""); // Clear progress message
+    setIsLoading(false);
+    setHasSearched(true);
+    setScrapingInProgress(false); // Done scraping
+    setShowTable(true); // Only show table after results are fetched
+    
+    // Set cooldown only after all pages are scraped successfully
+    if (!error) {
+      const endTime = Date.now() + 480000;
+      setCooldownEndTime(endTime);
+      localStorage.setItem(COOLDOWN_KEY, endTime);
+    }
+  }, [isLoading, cooldownEndTime, error]);
+
   const handlePageChange = (newPage) => {
-    if (!lastScrapeParams) return;
-    setPage(newPage);
-    handleScrape({ ...lastScrapeParams, page: newPage });
+    setCurrentPage(newPage);
+  };
+  
+  const clearResults = () => {
+    setResults({ results: [], total_results: 0 });
+    setShowTable(false);
+    localStorage.removeItem(RESULTS_KEY);
   };
 
   const clearFilters = () => {
@@ -180,7 +213,8 @@ function App() {
     setPostingFrom(null);
     setPostingTo(null);
     setSortBy("auctionDateAsc");
-    setPage(1);
+    setStartPage(1); // Reset startPage
+    setEndPage(1); // Reset endPage
     setPropertyType("");
     setRegion("");
     setMunicipality("");
@@ -195,15 +229,16 @@ function App() {
 
   // Check if any filters are active
   const hasActiveFilters = conductFrom || conductTo || postingFrom || postingTo || 
-    sortBy !== "auctionDateAsc" || page !== 1 || propertyType || region || municipality;
+    sortBy !== "auctionDateAsc" || startPage !== 1 || propertyType || region || municipality;
 
   // Check if scraping is disabled due to cooldown
   const isScrapingDisabled = isLoading || (cooldownEndTime && Date.now() < cooldownEndTime);
 
-    console.log(results,totalResults)
+    console.log(results, results.total_results)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      <Toaster position="top-center" reverseOrder={false} />
       <div className="container mx-auto px-6 py-8 max-w-7xl">
         {/* Header */}
         <div className="mb-8">
@@ -235,8 +270,10 @@ function App() {
           setPostingTo={setPostingTo}
           sortBy={sortBy}
           setSortBy={setSortBy}
-          page={page}
-          setPage={setPage}
+          startPage={startPage}
+          setStartPage={setStartPage}
+          endPage={endPage}
+          setEndPage={setEndPage}
           onScrape={handleScrape}
           isLoading={isLoading}
           clearFilters={clearFilters}
@@ -256,11 +293,11 @@ function App() {
         {isLoading && (
           <div className="p-4 rounded-lg border mb-8 flex items-center gap-3 bg-blue-50 text-blue-600 border-blue-200">
             <LoaderIcon className="w-5 h-5 animate-spin" />
-            <span className="font-medium">{t('scrapingInProgress')}</span>
+            <span className="font-medium">{scrapingProgress || t('scrapingInProgress')}</span>
           </div>
         )}
 
-        {!isLoading && results.length > 0 && !error && (
+        {!isLoading && results.results.length > 0 && !error && (
           <div className="p-4 rounded-lg border mb-8 flex items-center gap-3 bg-green-50 text-green-600 border-green-200">
             <CheckCircleIcon className="w-5 h-5" />
             <span className="font-medium">{t('scrapingComplete')}</span>
@@ -278,13 +315,25 @@ function App() {
         )}
 
         {/* Results Table with Post-scraping Filters */}
-        <Table
-          results={results}
-          totalResults={totalResults}
-          page={page}
-          onPageChange={handlePageChange}
-          hasSearched={hasSearched}
-        />
+        {scrapingInProgress ? (
+          <div className="text-center py-16 bg-white rounded-xl shadow-lg border border-gray-200">
+            <LoaderIcon className="w-8 h-8 mx-auto animate-spin text-blue-600 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-800">{scrapingProgress || t('scrapingInProgress')}</h3>
+          </div>
+        ) : showTable ? (
+          <Table
+            results={results}
+            hasSearched={hasSearched}
+            clearResults={clearResults}
+            page={currentPage}
+            onPageChange={handlePageChange}
+          />
+        ) : (
+          <div className="text-center py-16 bg-white rounded-xl shadow-lg border border-gray-200">
+            <h3 className="text-xl font-semibold text-gray-800">{t('noDataFetched')}</h3>
+            <p className="text-gray-500 mt-2">{t('startScrapeToSeeResults')}</p>
+          </div>
+        )}
       </div>
     </div>
   );

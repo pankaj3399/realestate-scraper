@@ -9,12 +9,12 @@ import random
 import time
 import json
 import re
-from dotenv import load_dotenv
+from dotenv import dotenv_values
 
 # BYPASS_HUMAN_BEHAVIOR: If True, all delays and human-like waits are skipped
 BYPASS_HUMAN_BEHAVIOR = False  # Set to True to skip all waits and scraping is instant
 
-load_dotenv()
+config = dotenv_values()  # Load .env file into a dictionary
 print(BYPASS_HUMAN_BEHAVIOR)
 
 def format_date(date_str):
@@ -197,18 +197,21 @@ def scrape_auctions(
     posting_from=None,
     posting_to=None,
     sort_by="auctionDateAsc",
-    page=1,
     regionParam=None,
     propertyParam=None,
     municipalityParam=None,
     selectedRegion=None,
     selectedMunicipality=None,
     selectedPropertyType=None,
+    page=1
 ):
     # Configure Gemini at the start
     gemini_model = configure_gemini()
 
     results = []
+
+    # Print startPage and endPage for debugging
+    print(f"Received page: {page}")
 
     # Prepare parameters
     params = {
@@ -298,40 +301,57 @@ def scrape_auctions(
         """
         )
 
-        page = context.new_page()
+        p_page = context.new_page()
 
         total_results = 0
         try:
             print("Loading main auction page...")
-            page.goto(url, timeout=60000)
+            p_page.goto(url, timeout=60000)
 
             # Extract total results count
             try:
-                total_text_elem = page.query_selector(".AuctionsListSearchOrderingTbl .AuctionsList-resultstxt")
-                if total_text_elem:
-                    total_text = total_text_elem.inner_text().strip()
-                    # Example: '14 auctions found' or '84 auctions found'
-                    match = re.search(r"\d+", total_text)
-                    if match:
-                        total_results = int(match.group())
-                    else:
-                        total_results = 0
-                    print(f"Total results found: {total_results}")
+                # Wait for the element to be available before reading it
+                total_text_selector = ".AuctionsListSearchOrderingTbl .AuctionsList-resultstxt"
+                print(f"Waiting for selector: {total_text_selector}")
+                total_text_elem = p_page.wait_for_selector(total_text_selector, timeout=15000) # Wait up to 15s
+                
+                total_text = total_text_elem.inner_text().strip()
+                print(f"Raw text for total results: '{total_text}'")
+
+                match = re.search(r"\d+", total_text)
+                if match:
+                    total_results = int(match.group())
+                else:
+                    total_results = 0
+                print(f"Total results found: {total_results}")
+
             except Exception as e:
                 print(f"Could not extract total results: {e}")
                 total_results = 0
+                
+                print(total_results,"THIS IS TOTAL RESULTS")
+
+            # Calculate total pages (20 auctions per page)
+            total_pages = (total_results + 19) // 20 if total_results > 0 else 1
+            print(f"Total pages: {total_pages}")
+
+            # Validate the requested page
+            if page < 1 or page > total_pages:
+                error_msg = f"Requested page {page} is not valid. Total pages available: {total_pages}."
+                print(error_msg)
+                return {"results": [], "total_results": total_results, "error": error_msg}
 
             # Initial human-like delay
             human_like_delay(1.2, 2.6)
 
             # Simulate human behavior on main page
-            simulate_human_scrolling(page)
-            simulate_mouse_movement(page)
+            simulate_human_scrolling(p_page)
+            simulate_mouse_movement(p_page)
 
             # Wait for content to load
-            page.wait_for_timeout(random.randint(800, 1500))
+            p_page.wait_for_timeout(random.randint(800, 1500))
 
-            auctions = page.query_selector_all("div.AList-BoxContainer")
+            auctions = p_page.query_selector_all("div.AList-BoxContainer")
             print(f"Found {len(auctions)} auctions to process")
 
             for idx, auction in enumerate(auctions):
@@ -762,7 +782,7 @@ def scrape_auctions(
 
 def configure_gemini():
     """Configure Gemini API with your API key"""
-    api_key = os.getenv("GEMINI_API_KEY")  # Set this in your environment
+    api_key = config.get("GEMINI_API_KEY")  # Use config dictionary
     if not api_key:
         print("Warning: GEMINI_API_KEY not set. PDF analysis will be skipped.")
         return None
@@ -867,6 +887,33 @@ Document:
     except Exception as e:
         print(f"Error calling Gemini API: {e}")
         return None
+
+
+def send_telegram_notification(message):
+    """Sends a message to a Telegram chat, reading config from .env."""
+    bot_token = config.get("TELEGRAM_BOT_TOKEN")  # Use config dictionary
+    chat_id = config.get("TELEGRAM_CHAT_ID")      # Use config dictionary
+
+    if not bot_token or not chat_id:
+        print("Warning: TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID not set. Skipping notification.")
+        return
+
+    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+    
+    payload = {
+        "chat_id": chat_id,
+        "text": message,
+        "parse_mode": "HTML"
+    }
+    
+    try:
+        response = requests.post(url, data=payload)
+        response.raise_for_status()
+        print("Telegram notification sent successfully.")
+    except requests.exceptions.RequestException as e:
+        print(f"Error sending Telegram notification: {e}")
+        if e.response is not None:
+            print(f"Response body: {e.response.text}")
 
 
 if __name__ == "__main__":
