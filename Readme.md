@@ -54,3 +54,22 @@ npm run dev
 ```bash
 python app.py
 ```
+
+## Telegram Bot Integration
+
+The server can send notifications to a Telegram chat using a bot. To enable this feature, you need to set up the following environment variables in your `server/.env` file:
+
+- `TELEGRAM_BOT_TOKEN`: The token for your Telegram bot. You can obtain this by creating a bot with [@BotFather](https://t.me/BotFather) on Telegram.
+- `TELEGRAM_CHAT_ID`: The chat ID where notifications will be sent. You can get your chat ID by messaging your bot and using a tool like [userinfobot](https://t.me/userinfobot) or by checking the updates from the [getUpdates](https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates) endpoint.
+
+### Example `server/.env` entries:
+```env
+TELEGRAM_BOT_TOKEN=your_bot_token_here
+TELEGRAM_CHAT_ID=your_chat_id_here
+```
+
+If these variables are not set, Telegram notifications will be skipped.
+
+### How it works
+- The server uses these variables to send messages via the Telegram Bot API when certain events occur (e.g., after scraping or on errors).
+- You can customize the notification logic in `server/scraper.py` (see the `send_telegram_notification` function).

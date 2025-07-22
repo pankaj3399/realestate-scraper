@@ -234,13 +234,11 @@ function App() {
   // Check if scraping is disabled due to cooldown
   const isScrapingDisabled = isLoading || (cooldownEndTime && Date.now() < cooldownEndTime);
 
-    console.log(results, results.total_results)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
-      <Toaster position="top-center" reverseOrder={false} />
+      {/* <Toaster   position="top-center" reverseOrder={false} /> */}
       <div className="container mx-auto px-6 py-8 max-w-7xl">
-        {/* Header */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -253,12 +251,11 @@ function App() {
             </div>
             <LanguageSelector />
           </div>
-          <p className="text-gray-600 text-lg">
+          <p className="text-gray-600 text-lg text-left">
             {t('configureFiltersAndScrape')}
           </p>
         </div>
 
-        {/* Pre-scraping Filters */}
         <Filters
           conductFrom={conductFrom}
           setConductFrom={setConductFrom}
@@ -282,7 +279,6 @@ function App() {
           timeLeft={timeLeft}
         />
 
-        {/* Status Messages */}
         {error && (
           <div className="p-4 rounded-lg border mb-8 flex items-center gap-3 bg-red-50 text-red-600 border-red-200">
             <AlertCircleIcon className="w-5 h-5" />
@@ -304,7 +300,6 @@ function App() {
           </div>
         )}
 
-        {/* Cooldown Warning */}
         {cooldownEndTime && Date.now() < cooldownEndTime && (
           <div className="p-4 rounded-lg border mb-8 flex items-center gap-3 bg-yellow-50 text-yellow-700 border-yellow-200">
             <ClockIcon className="w-5 h-5" />
@@ -314,7 +309,6 @@ function App() {
           </div>
         )}
 
-        {/* Results Table with Post-scraping Filters */}
         {scrapingInProgress ? (
           <div className="text-center py-16 bg-white rounded-xl shadow-lg border border-gray-200">
             <LoaderIcon className="w-8 h-8 mx-auto animate-spin text-blue-600 mb-4" />

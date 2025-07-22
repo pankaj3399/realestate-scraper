@@ -137,6 +137,7 @@ def scrape():
             address = item.get('address') or 'N/A'
             price = item.get('price') or 'N/A'
             area = item.get('property_area') or 'N/A'
+            price_per_sqm = item.get('price_per_sqm', 'N/A')
             link = item.get('detail_link', '#')
 
             message += (
@@ -144,6 +145,7 @@ def scrape():
                 f"<b>{prop_type}</b> at {address}\n"
                 f"- Price: <b>{price}</b>\n"
                 f"- Area: {area} m²\n"
+                f"- Price per sq m: <b>{price_per_sqm}</b>\n"
                 f"- <a href=\"{link}\">View Details</a>"
             )
 
@@ -154,6 +156,7 @@ def scrape():
             address = item.get('address') or 'N/A'
             price = item.get('price') or 'N/A'
             area = item.get('property_area') or 'N/A'
+            price_per_sqm = item.get('price_per_sqm', 'N/A')
             link = item.get('detail_link', '#')
 
             message += (
@@ -161,6 +164,7 @@ def scrape():
                 f"<b>{prop_type}</b> at {address}\n"
                 f"- Price: <b>{price}</b>\n"
                 f"- Area: {area} m²\n"
+                f"- Price per sq m: <b>{price_per_sqm}</b>\n"
                 f"- <a href=\"{link}\">View Details</a>"
             )
             
