@@ -126,6 +126,32 @@ function App() {
       return;
     }
 
+    // Check if server URL is configured
+    if (!import.meta.env.VITE_SERVER_URL) {
+      setError('Server URL is not configured. Please check your environment variables.');
+      return;
+    }
+
+    // Validate page numbers
+    const { startPage: startPageParam, endPage: endPageParam } = params;
+    const start = Number(startPageParam);
+    const end = Number(endPageParam);
+
+    if (isNaN(start) || isNaN(end)) {
+      setError('Invalid page numbers provided.');
+      return;
+    }
+
+    if (start < 1 || end < 1) {
+      setError('Page numbers must be greater than 0.');
+      return;
+    }
+
+    if (start > end) {
+      setError('Start page cannot be greater than end page.');
+      return;
+    }
+
     setScrapingInProgress(true);
     setShowTable(false); // Hide table while scraping
     setIsLoading(true);
@@ -134,16 +160,15 @@ function App() {
     setLastScrapeParams(params);
     setScrapingProgress("");
 
-    const { startPage, endPage } = params;
     let allResults = [];
     let totalAuctions = 0;
 
-    for (let currentPage = startPage; currentPage <= endPage; currentPage++) {
+    for (let currentPage = start; currentPage <= end; currentPage++) {
       let progressMsg = '';
-      if (startPage === endPage) {
+      if (start === end) {
         progressMsg = `Scraping page ${currentPage}...`;
       } else {
-        progressMsg = `Scraping page ${currentPage} of ${endPage}...`;
+        progressMsg = `Scraping page ${currentPage} of ${end}...`;
       }
       setScrapingProgress(progressMsg);
 
@@ -160,25 +185,42 @@ function App() {
         });
 
         const data = await response.json();
+        console.log(`Page ${currentPage} response:`, data); // Debug log
 
-        if (!response.ok && data.error) {
+        if (!response.ok) {
+          const errorMessage = data.error || data.message || 'Unknown error occurred';
+          setError(`Error on page ${currentPage}: ${errorMessage}`);
+          break; // Stop on error
+        }
+
+        if (data.error) {
           setError(`Error on page ${currentPage}: ${data.error}`);
           break; // Stop on error
         }
 
-        if (data.results) {
+        if (data.results && Array.isArray(data.results)) {
           allResults = [...allResults, ...data.results];
           totalAuctions = data.total_results || allResults.length;
           setResults({ results: allResults, total_results: totalAuctions });
         } else {
           // Handle case where data.results is not as expected
-          allResults = [...allResults, ...data];
+          console.warn(`Unexpected data format on page ${currentPage}:`, data);
+          if (Array.isArray(data)) {
+            allResults = [...allResults, ...data];
+          } else {
+            console.error(`Invalid data format on page ${currentPage}:`, data);
+          }
           totalAuctions = allResults.length;
           setResults({ results: allResults, total_results: totalAuctions });
         }
 
       } catch (err) {
-        setError(`Failed to scrape page ${currentPage}: ${err.message}`);
+        console.error(`Network error on page ${currentPage}:`, err);
+        if (err.name === 'TypeError' && err.message.includes('fetch')) {
+          setError(`Failed to connect to server. Please check if the server is running at ${import.meta.env.VITE_SERVER_URL}`);
+        } else {
+          setError(`Failed to scrape page ${currentPage}: ${err.message}`);
+        }
         break; // Stop on error
       }
     }

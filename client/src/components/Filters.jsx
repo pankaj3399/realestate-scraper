@@ -110,8 +110,13 @@ const Filters = ({
     const start = Number(startPage);
     const end = Number(endPage);
 
-    if (isNaN(start) || isNaN(end) || start < 1 || end < 1) {
+    if (isNaN(start) || isNaN(end)) {
       toast.error('Please enter valid page numbers.');
+      return;
+    }
+
+    if (start < 1 || end < 1) {
+      toast.error('Page numbers must be greater than 0.');
       return;
     }
 
@@ -166,8 +171,8 @@ const Filters = ({
         postingFrom,
         postingTo,
         sortBy,
-        startPage, // new
-        endPage,   // new
+        startPage: start, // Use validated start page
+        endPage: end,     // Use validated end page
         regionParam,
         propertyParam,
         municipalityParam,
@@ -176,6 +181,18 @@ const Filters = ({
         selectedPropertyType: propertyType,
       });
     }
+  };
+
+  // Check if there are validation errors
+  const hasValidationErrors = () => {
+    const start = Number(startPage);
+    const end = Number(endPage);
+    
+    if (isNaN(start) || isNaN(end)) return true;
+    if (start < 1 || end < 1) return true;
+    if (start > end) return true;
+    
+    return false;
   };
 
   // Get button text and icon based on state
@@ -318,11 +335,20 @@ const Filters = ({
               {t('startPage')}
             </label>
             <input
-              type="text"
+              type="number"
+              min="1"
               value={startPage}
               onChange={(e) => setStartPage(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                Number(startPage) > Number(endPage) && endPage !== '' 
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                  : 'border-gray-300'
+              }`}
+              placeholder="1"
             />
+            {Number(startPage) > Number(endPage) && endPage !== '' && (
+              <p className="text-sm text-red-600">Start page cannot be greater than end page</p>
+            )}
           </div>
 
           {/* End Page */}
@@ -331,11 +357,20 @@ const Filters = ({
               {t('endPage')}
             </label>
             <input
-              type="text"
+              type="number"
+              min="1"
               value={endPage}
               onChange={(e) => setEndPage(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+              className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors ${
+                Number(endPage) < Number(startPage) && startPage !== '' 
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                  : 'border-gray-300'
+              }`}
+              placeholder="1"
             />
+            {Number(endPage) < Number(startPage) && startPage !== '' && (
+              <p className="text-sm text-red-600">End page cannot be less than start page</p>
+            )}
           </div>
 
           {/* Property Type */}
@@ -399,13 +434,19 @@ const Filters = ({
       <div className="p-6">
         <Button
           onClick={handleScrape}
-          disabled={isScrapingDisabled}
+          disabled={isScrapingDisabled || hasValidationErrors()}
           className={`px-8 py-3 rounded-lg font-medium transition-colors duration-200 flex items-center gap-2 ${
-            isScrapingDisabled 
+            isScrapingDisabled || hasValidationErrors()
               ? 'bg-gray-400 text-gray-600 cursor-not-allowed' 
               : 'bg-blue-600 hover:bg-blue-700 text-white'
           }`}
-          title={isScrapingDisabled && timeLeft ? t('waitBeforeNextScrape', { timeLeft }) : ''}
+          title={
+            isScrapingDisabled && timeLeft 
+              ? t('waitBeforeNextScrape', { timeLeft }) 
+              : hasValidationErrors() 
+                ? 'Please fix validation errors before scraping'
+                : ''
+          }
         >
           {getButtonContent()}
         </Button>
