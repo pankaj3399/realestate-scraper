@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from "react";
 import { CSVLink } from "react-csv";
 import * as XLSX from "xlsx";
-import { useTranslation } from 'react-i18next';
+import { useTranslation } from "react-i18next";
 import {
   Dialog,
   DialogContent,
@@ -23,18 +23,41 @@ import {
   X,
   Download,
   BookText,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
 } from "lucide-react";
+import MultiSelect from "./ui/multi-select";
+import { Button } from "./ui/button";
 
-const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange, hasSearched }) => {
+const Table = ({
+  results = { results: [], total_results: 0 },
+  page,
+  onPageChange,
+  hasSearched,
+}) => {
   const { t } = useTranslation();
   const resultArray = Array.isArray(results.results) ? results.results : [];
   const totalResults = results.total_results || 0;
   // Post-scraping filter states
-  const [propertyTypeFilter, setPropertyTypeFilter] = useState("");
-  const [regionFilter, setRegionFilter] = useState("");
-  const [municipalityFilter, setMunicipalityFilter] = useState("");
-  const [priceFilter, setPriceFilter] = useState({ min: "", max: "" });
-  const [occupancyFilter, setOccupancyFilter] = useState("");
+  const [filters, setFilters] = useState({
+    codeSearch: "",
+    descriptionSearch: "",
+    property_type: [],
+    region: [],
+    municipality: [],
+    occupancy_status: [],
+    price: { min: "", max: "" },
+    property_area: { min: "", max: "" },
+    price_per_sqm: { min: "", max: "" },
+  });
+  const [isFiltersVisible, setIsFiltersVisible] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const resultsPerPage = 20;
 
   // Modal State
   const [modalData, setModalData] = useState(null);
@@ -112,43 +135,53 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
       return [];
     }
 
-    console.log(resultArray);
-
     return resultArray.filter((item) => {
       // Skip error items in filtering
       if (item.error) return true;
 
+      // Code Search
+      if (filters.codeSearch && !item.code?.toLowerCase().includes(filters.codeSearch.toLowerCase())) return false;
+      
+      // Description/Notes Search
+      if (filters.descriptionSearch) {
+        const searchTerm = filters.descriptionSearch.toLowerCase();
+        const searchableFields = [
+          item.property_description,
+          item.notes,
+        ].join(' ').toLowerCase();
+
+        if (!searchableFields.includes(searchTerm)) return false;
+      }
+
       // Property Type filter
-      if (propertyTypeFilter && item.kind !== propertyTypeFilter) return false;
-
+      if (filters.property_type.length > 0 && !filters.property_type.includes(item.kind)) return false;
+      
       // Region filter
-      if (regionFilter && item.region !== regionFilter) return false;
-
+      if (filters.region.length > 0 && !filters.region.includes(item.region)) return false;
+      
       // Municipality filter
-      if (municipalityFilter && item.municipality !== municipalityFilter)
-        return false;
-
-      // Occupancy filter
-      if (occupancyFilter && item.occupancy_status !== occupancyFilter)
-        return false;
-
+      if (filters.municipality.length > 0 && !filters.municipality.includes(item.municipality)) return false;
+      
+      // Occupancy status filter
+      if (filters.occupancy_status.length > 0 && !filters.occupancy_status.includes(item.occupancy_status)) return false;
+      
       // Price filter
       const numericPrice = getNumericPrice(item.price);
-      if (priceFilter.min && numericPrice < parseFloat(priceFilter.min))
-        return false;
-      if (priceFilter.max && numericPrice > parseFloat(priceFilter.max))
-        return false;
+      if (filters.price.min && numericPrice < parseFloat(filters.price.min)) return false;
+      if (filters.price.max && numericPrice > parseFloat(filters.price.max)) return false;
+
+      // Area filter
+      if (filters.property_area.min && item.property_area < parseFloat(filters.property_area.min)) return false;
+      if (filters.property_area.max && item.property_area > parseFloat(filters.property_area.max)) return false;
+
+      // Price per m² filter
+      const numericPricePerSqm = getNumericPrice(item.price_per_sqm);
+      if (filters.price_per_sqm.min && numericPricePerSqm < parseFloat(filters.price_per_sqm.min)) return false;
+      if (filters.price_per_sqm.max && numericPricePerSqm > parseFloat(filters.price_per_sqm.max)) return false;
 
       return true;
     });
-  }, [
-    resultArray,
-    propertyTypeFilter,
-    regionFilter,
-    municipalityFilter,
-    priceFilter,
-    occupancyFilter,
-  ]);
+  }, [resultArray, filters]);
 
   // Headers for CSV/Excel export
   const headers = [
@@ -156,11 +189,11 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
     { label: "Simple Tag", key: "simple_tag" },
     { label: "Code", key: "code" },
     { label: "Part #", key: "part_number" },
-    { label: t('date'), key: "date" },
+    { label: t("date"), key: "date" },
     { label: "Post Date", key: "post_date" },
-    { label: t('price'), key: "price" },
+    { label: t("price"), key: "price" },
     { label: "Auction Object", key: "auction_object" },
-    { label: t('propertyType'), key: "property_type" },
+    { label: t("propertyType"), key: "property_type" },
     { label: "Address", key: "address" },
     { label: "Area (m²)", key: "property_area" },
     { label: "Price per m²", key: "price_per_sqm" },
@@ -233,18 +266,13 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
   );
 
   const uniqueMunicipalities = useMemo(() => {
-    const municipalities = regionFilter
-      ? resultArray
-          .filter((item) => item && item.region === regionFilter) // Add safety check
-          .map((item) => item.municipality)
-          .filter((municipality) => municipality && municipality !== "N/A")
-      : resultArray
-          .filter((item) => item && item.municipality) // Add safety check
-          .map((item) => item.municipality)
-          .filter((municipality) => municipality && municipality !== "N/A");
+    const municipalities = resultArray
+        .filter((item) => item && item.municipality)
+        .map((item) => item.municipality)
+        .filter((municipality) => municipality && municipality !== "N/A");
 
     return [...new Set(municipalities)].sort();
-  }, [resultArray, regionFilter]);
+  }, [resultArray]);
 
   const uniqueOccupancyStatuses = useMemo(
     () =>
@@ -260,36 +288,55 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
   );
 
   const clearPostFilters = () => {
-    setPropertyTypeFilter("");
-    setRegionFilter("");
-    setMunicipalityFilter("");
-    setPriceFilter({ min: "", max: "" });
-    setOccupancyFilter("");
+    setFilters({
+      codeSearch: "",
+      descriptionSearch: "",
+      property_type: [],
+      region: [],
+      municipality: [],
+      occupancy_status: [],
+      price: { min: "", max: "" },
+      property_area: { min: "", max: "" },
+      price_per_sqm: { min: "", max: "" },
+    });
   };
 
   const hasActiveFilters =
-    propertyTypeFilter ||
-    regionFilter ||
-    municipalityFilter ||
-    priceFilter.min ||
-    priceFilter.max ||
-    occupancyFilter;
+    filters.codeSearch ||
+    filters.descriptionSearch ||
+    filters.property_type.length > 0 ||
+    filters.region.length > 0 ||
+    filters.municipality.length > 0 ||
+    filters.occupancy_status.length > 0 ||
+    filters.price.min || filters.price.max ||
+    filters.property_area.min || filters.property_area.max ||
+    filters.price_per_sqm.min || filters.price_per_sqm.max;
 
   // Pagination logic
-  const resultsPerPage = 20;
-  const totalPages = Math.max(
-    1,
-    Math.ceil((totalResults || resultArray.length) / resultsPerPage)
-  );
+  const totalPages = Math.max(1, Math.ceil(filteredResults.length / resultsPerPage));
 
-  console.log(totalResults)
+  const paginatedResults = useMemo(() => {
+    const startIndex = (currentPage - 1) * resultsPerPage;
+    const endIndex = startIndex + resultsPerPage;
+    return filteredResults.slice(startIndex, endIndex);
+  }, [filteredResults, currentPage]);
 
-  if (hasSearched && (!Array.isArray(resultArray) || resultArray.length === 0)) {
+  // Reset page to 1 whenever filters change
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filters]);
+
+  if (
+    hasSearched &&
+    (!Array.isArray(resultArray) || resultArray.length === 0)
+  ) {
     return (
       <div className="bg-white rounded-xl shadow-lg border border-gray-200 p-8 text-center">
         <Grid3X3 className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">{t('noResults')}</h3>
-        <p className="text-gray-500">{t('noResults')}</p>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">
+          {t("noResults")}
+        </h3>
+        <p className="text-gray-500">{t("noResults")}</p>
       </div>
     );
   }
@@ -306,14 +353,22 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
               </div>
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">
-                  {t('auctionResults')}
+                  {t("auctionResults")}
                 </h2>
                 <p className="text-sm text-gray-600">
-                  {t('showing')} {filteredResults.length} {t('of')} {resultArray.length} {t('results')}
+                  {t("showing")} {filteredResults.length} {t("of")}{" "}
+                  {resultArray.length} {t("results")}
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <button
+                onClick={() => setIsFiltersVisible(!isFiltersVisible)}
+                className="flex items-center gap-2 px-4 py-2 cursor-pointer bg-gray-700 text-gray-100 rounded-lg hover:bg-gray-600 transition-colors font-medium text-sm"
+              >
+                {isFiltersVisible ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                {t("advancedFilters")}
+              </button>
               <CSVLink
                 data={exportData}
                 headers={headers}
@@ -321,14 +376,14 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                 className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-sm"
               >
                 <Download className="w-4 h-4" />
-                {t('exportToCSV')}
+                {t("exportToCSV")}
               </CSVLink>
               <button
                 onClick={handleExcelExport}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium text-sm"
               >
                 <Download className="w-4 h-4" />
-                {t('exportToExcel')}
+                {t("exportToExcel")}
               </button>
               {hasActiveFilters && (
                 <button
@@ -336,119 +391,181 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                   className="flex items-center gap-2 px-4 py-2 bg-white text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors font-medium"
                 >
                   <X className="w-4 h-4" />
-                  {t('clearFilters')}
+                  {t("clearFilters")}
                 </button>
               )}
             </div>
           </div>
 
-          {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                <Home className="w-4 h-4" />
-                Property Type
-              </label>
-              <select
-                value={propertyTypeFilter}
-                onChange={(e) => setPropertyTypeFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-sm shadow-sm"
-              >
-                <option value="">All Types</option>
-                {uniquePropertyTypes.map((type) => (
-                  <option key={type} value={type}>
-                    {type}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
-                Region
-              </label>
-              <select
-                value={regionFilter}
-                onChange={(e) => {
-                  setRegionFilter(e.target.value);
-                  setMunicipalityFilter(""); // Reset municipality when region changes
-                }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-sm shadow-sm"
-              >
-                <option value="">All Regions</option>
-                {uniqueRegions.map((region) => (
-                  <option key={region} value={region}>
-                    {region}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                <MapPin className="w-4 h-4" />
-                Municipality
-              </label>
-              <select
-                value={municipalityFilter}
-                onChange={(e) => setMunicipalityFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-sm shadow-sm"
-              >
-                <option value="">All Municipalities</option>
-                {uniqueMunicipalities.map((municipality) => (
-                  <option key={municipality} value={municipality}>
-                    {municipality}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                <User className="w-4 h-4" />
-                Occupancy
-              </label>
-              <select
-                value={occupancyFilter}
-                onChange={(e) => setOccupancyFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all bg-white text-sm shadow-sm"
-              >
-                <option value="">All Status</option>
-                {uniqueOccupancyStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                <Euro className="w-4 h-4" />
-                Price Range
-              </label>
-              <div className="flex gap-1">
+          {isFiltersVisible && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-6 border-t border-gray-200">
+              {/* Code Search */}
+              <div className="xl:col-span-2">
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <Search className="w-4 h-4" />
+                  Code Search
+                </label>
                 <input
-                  type="number"
-                  value={priceFilter.min}
-                  onChange={(e) =>
-                    setPriceFilter((prev) => ({ ...prev, min: e.target.value }))
-                  }
-                  placeholder="Min €"
-                  className="w-1/2 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm shadow-sm"
-                />
-                <input
-                  type="number"
-                  value={priceFilter.max}
-                  onChange={(e) =>
-                    setPriceFilter((prev) => ({ ...prev, max: e.target.value }))
-                  }
-                  placeholder="Max €"
-                  className="w-1/2 px-2 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm shadow-sm"
+                  type="text"
+                  placeholder="Search by code..."
+                  value={filters.codeSearch}
+                  onChange={(e) => setFilters(prev => ({ ...prev, codeSearch: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+
+              {/* Description/Notes Search */}
+              <div className="xl:col-span-2">
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <BookText className="w-4 h-4" />
+                  Description & Notes Search
+                </label>
+                <input
+                  type="text"
+                  placeholder="Search in descriptions and notes..."
+                  value={filters.descriptionSearch}
+                  onChange={(e) => setFilters(prev => ({ ...prev, descriptionSearch: e.target.value }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Property Type Filter */}
+              {uniquePropertyTypes.length > 1 && (
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                    <Home className="w-4 h-4" />
+                    Property Type
+                  </label>
+                  <MultiSelect
+                    options={uniquePropertyTypes.map(type => ({ value: type, label: type }))}
+                    selected={filters.property_type}
+                    onChange={(selected) => setFilters(prev => ({ ...prev, property_type: selected }))}
+                    placeholder="Select types..."
+                  />
+                </div>
+              )}
+
+              {/* Region Filter */}
+              {uniqueRegions.length > 1 && (
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                    <MapPin className="w-4 h-4" />
+                    Region
+                  </label>
+                  <MultiSelect
+                    options={uniqueRegions.map(region => ({ value: region, label: region }))}
+                    selected={filters.region}
+                    onChange={(selected) => setFilters(prev => ({ ...prev, region: selected }))}
+                    placeholder="Select regions..."
+                  />
+                </div>
+              )}
+            
+              {/* Municipality Filter */}
+              {uniqueMunicipalities.length > 1 && (
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                    <MapPin className="w-4 h-4" />
+                    Municipality
+                  </label>
+                  <MultiSelect
+                    options={uniqueMunicipalities.map(municipality => ({ value: municipality, label: municipality }))}
+                    selected={filters.municipality}
+                    onChange={(selected) => setFilters(prev => ({...prev, municipality: selected}))}
+                    placeholder="Select municipalities..."
+                  />
+                </div>
+              )}
+              
+              {/* Occupancy Filter */}
+              {uniqueOccupancyStatuses.length > 1 && (
+                <div>
+                  <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                    <User className="w-4 h-4" />
+                    Occupancy
+                  </label>
+                  <MultiSelect
+                    options={uniqueOccupancyStatuses.map(status => ({ value: status, label: status }))}
+                    selected={filters.occupancy_status}
+                    onChange={(selected) => setFilters(prev => ({...prev, occupancy_status: selected}))}
+                    placeholder="Select statuses..."
+                  />
+                </div>
+              )}
+              
+              {/* Price Range */}
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <Euro className="w-4 h-4" />
+                  Price Range
+                </label>
+                <div className="flex gap-1">
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={filters.price.min}
+                    onChange={(e) => setFilters(prev => ({...prev, price: { ...prev.price, min: e.target.value } }))}
+                    className="w-1/2 px-2 py-2 border border-gray-300 rounded-lg"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={filters.price.max}
+                    onChange={(e) => setFilters(prev => ({...prev, price: { ...prev.price, max: e.target.value } }))}
+                    className="w-1/2 px-2 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              {/* Area Range */}
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <Home className="w-4 h-4" />
+                  Area (m²)
+                </label>
+                <div className="flex gap-1">
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={filters.property_area.min}
+                    onChange={(e) => setFilters(prev => ({...prev, property_area: { ...prev.property_area, min: e.target.value } }))}
+                    className="w-1/2 px-2 py-2 border border-gray-300 rounded-lg"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={filters.property_area.max}
+                    onChange={(e) => setFilters(prev => ({...prev, property_area: { ...prev.property_area, max: e.target.value } }))}
+                    className="w-1/2 px-2 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              {/* Price per m² Range */}
+              <div>
+                <label className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <Euro className="w-4 h-4" />
+                  Price/m²
+                </label>
+                <div className="flex gap-1">
+                  <input
+                    type="number"
+                    placeholder="Min"
+                    value={filters.price_per_sqm.min}
+                    onChange={(e) => setFilters(prev => ({...prev, price_per_sqm: { ...prev.price_per_sqm, min: e.target.value } }))}
+                    className="w-1/2 px-2 py-2 border border-gray-300 rounded-lg"
+                  />
+                  <input
+                    type="number"
+                    placeholder="Max"
+                    value={filters.price_per_sqm.max}
+                    onChange={(e) => setFilters(prev => ({...prev, price_per_sqm: { ...prev.price_per_sqm, max: e.target.value } }))}
+                    className="w-1/2 px-2 py-2 border border-gray-300 rounded-lg"
+                  />
+                </div>
+              </div>
             </div>
-          </div> */}
+          )}
         </div>
 
         {/* Results Table */}
@@ -457,57 +574,57 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('aiLabel')}
+                  {t("aiLabel")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('simpleTag')}
+                  {t("simpleTag")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('code')}
+                  {t("code")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('partNumber')}
+                  {t("partNumber")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('auctionDate')}
+                  {t("auctionDate")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('postDate')}
+                  {t("postDate")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('startingPrice')}
+                  {t("startingPrice")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('auctionObject')}
+                  {t("auctionObject")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('propertyType')}
+                  {t("propertyType")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('address')}
+                  {t("address")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('area')}
+                  {t("area")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('pricePerSqm')}
+                  {t("pricePerSqm")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('occupancyStatus')}
+                  {t("occupancyStatus")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('description')}
+                  {t("description")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider border-r border-gray-200">
-                  {t('notes')}
+                  {t("notes")}
                 </th>
                 <th className="px-4 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">
-                  {t('url')}
+                  {t("url")}
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {filteredResults.map((item, idx) =>
+              {paginatedResults.map((item, idx) =>
                 item.error ? (
                   <tr
                     key={idx}
@@ -627,13 +744,13 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                           <button
                             onClick={() =>
                               setModalData({
-                                title: t('propertyDescription'),
+                                title: t("propertyDescription"),
                                 content: item.property_description,
                               })
                             }
                             className="text-blue-600 hover:underline text-xs mt-1 inline-flex items-center gap-1"
                           >
-                            {t('readMore')} <BookText className="w-3 h-3" />
+                            {t("readMore")} <BookText className="w-3 h-3" />
                           </button>
                         )}
                       </div>
@@ -649,13 +766,13 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                           <button
                             onClick={() =>
                               setModalData({
-                                title: t('notes'),
+                                title: t("notes"),
                                 content: item.notes,
                               })
                             }
                             className="text-blue-600 hover:underline text-xs mt-1 inline-flex items-center gap-1"
                           >
-                            {t('readMore')} <BookText className="w-3 h-3" />
+                            {t("readMore")} <BookText className="w-3 h-3" />
                           </button>
                         )}
                       </div>
@@ -701,7 +818,9 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
                           ))}
                         </div>
                       ) : (
-                        <span className="text-gray-400 text-xs">{t('noPdfs')}</span>
+                        <span className="text-gray-400 text-xs">
+                          {t("noPdfs")}
+                        </span>
                       )}
                     </td>
 
@@ -723,47 +842,67 @@ const Table = ({ results = { results: [], total_results: 0 }, page, onPageChange
           </table>
         </div>
 
-        {/* Footer */}
-        {filteredResults.length === 0 &&
-          !resultArray.some((item) => item.error) && (
-            <div className="p-8 text-center bg-gray-50">
-              <Filter className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                {t('noResultsFound')}
-              </h3>
-              <p className="text-gray-500 mb-4">
-                {t('tryAdjustingFilters')}
-              </p>
-              <button
-                onClick={clearPostFilters}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+        {/* Footer & Pagination */}
+        <div className="flex items-center justify-between p-6 bg-gray-50 border-t border-gray-200">
+        {filteredResults.length > 0 ? (
+          <div className="flex items-center justify-between w-full">
+            <span className="text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(1)}
+                disabled={currentPage === 1}
               >
-                {t('clearAllFilters')}
-              </button>
+                <ChevronsLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(totalPages)}
+                disabled={currentPage === totalPages}
+              >
+                <ChevronsRight className="h-4 w-4" />
+              </Button>
             </div>
+          </div>
+          ) : (
+            !resultArray.some((item) => item.error) && (
+              <div className="w-full p-8 text-center">
+                <Filter className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  {t("noResultsFound")}
+                </h3>
+                <p className="text-gray-500 mb-4">{t("tryAdjustingFilters")}</p>
+                <button
+                  onClick={clearPostFilters}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                >
+                  {t("clearAllFilters")}
+                </button>
+              </div>
+            )
           )}
+        </div>
       </div>
-
-      {/* Pagination Controls */}
-      {/* <div className="flex justify-center items-center gap-2 my-6">
-        <button
-          onClick={() => onPageChange(page - 1)}
-          disabled={page <= 1}
-          className="px-3 py-1 rounded border bg-white disabled:opacity-50"
-        >
-          Prev
-        </button>
-        <span>
-          Page {page} of {totalPages}
-        </span>
-        <button
-          onClick={() => onPageChange(page + 1)}
-          disabled={page >= totalPages}
-          className="px-3 py-1 rounded border bg-white disabled:opacity-50"
-        >
-          Next
-        </button>
-      </div> */}
 
       <Dialog open={!!modalData} onOpenChange={() => setModalData(null)}>
         <DialogContent className="sm:max-w-2xl">

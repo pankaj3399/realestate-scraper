@@ -31,6 +31,8 @@ const enTranslations = {
     allRegions: "All Regions",
     allMunicipalities: "All Municipalities",
     allStatus: "All Status",
+    startPage: "Start Page",
+    endPage: "End Page",
 
     // Sort options
     startingPriceAsc: "Starting Price (ascending)",
@@ -82,6 +84,7 @@ const enTranslations = {
     simpleTag: "Simple Tag",
     code: "Code",
     partNumber: "Part #",
+    advancedFilters: "Advanced Filters",
     auctionDate: "Auction Date",
     postDate: "Post Date",
     startingPrice: "Starting Price",
@@ -108,6 +111,7 @@ const enTranslations = {
     // Export
     exportToCSV: "Export to CSV",
     exportToExcel: "Export to Excel",
+    clearResults: "Clear Results",
 
     // Errors
     noResults: "No results found.",
@@ -117,6 +121,8 @@ const enTranslations = {
     loading: "Loading...",
     error: "Error",
     retry: "Retry",
+    noDataFetched: "No Data Fetched",
+    startScrapeToSeeResults: "Start a scrape to see results here.",
   },
 };
 
@@ -150,6 +156,8 @@ const elTranslations = {
     allRegions: "Όλες οι Περιφέρειες",
     allMunicipalities: "Όλοι οι Δήμοι",
     allStatus: "Όλες οι Καταστάσεις",
+    startPage: "Αρχική Σελίδα",
+    endPage: "Τελική Σελίδα",
 
     // Sort options
     startingPriceAsc: "Τιμή Έναρξης (αύξουσα)",
@@ -213,9 +221,10 @@ const elTranslations = {
     municipality: "Δήμος",
     detailLink: "Σύνδεσμος Λεπτομερειών",
     aiLabel: "Ετικέτα AI",
-    simpleTag: "Απλή Ετικέτα",
+    simpleTag: "Απλή ετικέτα",
     code: "Κωδικός",
-    partNumber: "Αρ. Μέρους",
+    partNumber: "Αρ. μέρους",
+    advancedFilters: "Προηγμένα Φίλτρα",
     auctionDate: "Ημερομηνία Δημοπρασίας",
     postDate: "Ημερομηνία Δημοσίευσης",
     startingPrice: "Τιμή Έναρξης",
@@ -242,6 +251,7 @@ const elTranslations = {
     // Export
     exportToCSV: "Εξαγωγή σε CSV",
     exportToExcel: "Εξαγωγή σε Excel",
+    clearResults: "Καθαρισμός Αποτελεσμάτων",
 
     // Errors
     noResults: "Δεν βρέθηκαν αποτελέσματα.",
@@ -252,6 +262,8 @@ const elTranslations = {
     loading: "Φόρτωση...",
     error: "Σφάλμα",
     retry: "Επανάληψη",
+    noDataFetched: "Δεν Έχουν Ληφθεί Δεδομένα",
+    startScrapeToSeeResults: "Ξεκινήστε ένα scrape για να δείτε εδώ τα αποτελέσματα.",
   },
 };
 

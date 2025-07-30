@@ -1,9 +1,10 @@
 from flask import Flask, render_template_string, jsonify, request
 from flask_cors import CORS
-from scraper import scrape_auctions
+from scraper import scrape_auctions, send_telegram_notification
 import os
-from dotenv import load_dotenv
-load_dotenv()
+from dotenv import dotenv_values
+
+config = dotenv_values()  # Load .env file into a dictionary
 
 app = Flask(__name__)
 CORS(app)
@@ -72,7 +73,7 @@ def scrape():
     print("Raw request data:", data)  # Debug log
     
     # Gemini API key check
-    if not os.getenv("GEMINI_API_KEY"):
+    if not config.get("GEMINI_API_KEY"):
         return jsonify({"error": "Gemini API key is not configured. Please set GEMINI_API_KEY in your environment."}), 400
     
     conduct_from = data.get('conductFrom')
@@ -80,10 +81,10 @@ def scrape():
     posting_from = data.get('postingFrom')
     posting_to = data.get('postingTo')
     sort_by = data.get('sortBy', 'auctionDateAsc')
-    page = data.get('page', 1)
     regionParam = data.get('regionParam')
     propertyParam = data.get('propertyParam')
     municipalityParam = data.get('municipalityParam')
+    page = data.get('page', 1)  # new
     
     print("Extracted parameters:")  # Debug log
     print(f"- conductFrom: {conduct_from}")
@@ -91,10 +92,10 @@ def scrape():
     print(f"- postingFrom: {posting_from}")
     print(f"- postingTo: {posting_to}")
     print(f"- sortBy: {sort_by}")
-    print(f"- page: {page}")
     print(f"- regionParam: {regionParam}")
     print(f"- propertyParam: {propertyParam}")
     print(f"- municipalityParam: {municipalityParam}")
+    print(f"- page: {page}")  # new
 
     # Call scraper with filters
     results = scrape_auctions(
@@ -103,12 +104,77 @@ def scrape():
         posting_from=posting_from,
         posting_to=posting_to,
         sort_by=sort_by,
-        page=page,
         regionParam=regionParam,
         propertyParam=propertyParam,
-        municipalityParam=municipalityParam
+        municipalityParam=municipalityParam,
+        page=page,  # new
     )
-    return jsonify({"results": results})
+    if 'error' in results:
+        return jsonify({"error": results['error']}), 400
+        
+    # Format and send Telegram notification
+    num_results = len(results.get("results", []))
+    
+    # Check for special keywords like 'Hot' or 'Opportunity'
+    all_results = results.get("results", [])
+    hot_items = [item for item in all_results if "Hot" in item.get("ai_labels", [])]
+    
+    # Get opportunities that are not also "Hot" to avoid duplicates
+    opportunity_items = [
+        item for item in all_results
+        if item.get("simple_tag") == "Opportunity" and "Hot" not in item.get("ai_labels", [])
+    ]
+    
+    message = (
+        f"<b>Scraping Complete!</b>\n"
+        f"- Found: <b>{num_results}</b> results on this page."
+    )
+    
+    if hot_items:
+        message += f"\n\n<b>🔥 Hot Items ({len(hot_items)}):</b>"
+        for item in hot_items:
+            prop_type = item.get('property_type') or 'N/A'
+            address = item.get('address') or 'N/A'
+            price = item.get('price') or 'N/A'
+            area = item.get('property_area') or 'N/A'
+            price_per_sqm = item.get('price_per_sqm', 'N/A')
+            link = item.get('detail_link', '#')
+
+            message += (
+                f"\n--------------------------------------\n"
+                f"<b>{prop_type}</b> at {address}\n"
+                f"- Price: <b>{price}</b>\n"
+                f"- Area: {area} m²\n"
+                f"- Price per sq m: <b>{price_per_sqm}</b>\n"
+                f"- <a href=\"{link}\">View Details</a>"
+            )
+
+    if opportunity_items:
+        message += f"\n\n<b>💼 Other Opportunities ({len(opportunity_items)}):</b>"
+        for item in opportunity_items:
+            prop_type = item.get('property_type') or 'N/A'
+            address = item.get('address') or 'N/A'
+            price = item.get('price') or 'N/A'
+            area = item.get('property_area') or 'N/A'
+            price_per_sqm = item.get('price_per_sqm', 'N/A')
+            link = item.get('detail_link', '#')
+
+            message += (
+                f"\n--------------------------------------\n"
+                f"<b>{prop_type}</b> at {address}\n"
+                f"- Price: <b>{price}</b>\n"
+                f"- Area: {area} m²\n"
+                f"- Price per sq m: <b>{price_per_sqm}</b>\n"
+                f"- <a href=\"{link}\">View Details</a>"
+            )
+            
+    # Fallback message if no special items found
+    if not hot_items and not opportunity_items:
+        message += "\nNo special deals found in this batch."
+    
+    send_telegram_notification(message)
+    
+    return jsonify(results)
 
 if __name__ == "__main__":
     app.run(debug=True)
