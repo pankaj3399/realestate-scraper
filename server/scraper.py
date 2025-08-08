@@ -703,7 +703,7 @@ def scrape_auctions(
 
                     if (
                         price_per_sqm
-                        and price_per_sqm < 1000
+                        and price_per_sqm < 600
                         and pdf_analysis.get("property_area", 0) > 70
                         and is_within_3_weeks
                     ):
@@ -719,11 +719,6 @@ def scrape_auctions(
                             None,
                         ]:
                             ai_labels.append("Hot")
-
-                    # Additional check: Any property under €1000/sqm is a good deal
-                    elif price_per_sqm and price_per_sqm < 1000:
-                        ai_labels.append("Καλή Ευκαιρία")
-                        simple_tag = "Opportunity"
 
                     # 5. Προσοχή (Caution)
                     low_price_threshold = 50000
