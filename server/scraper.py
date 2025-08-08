@@ -13,7 +13,6 @@ from dotenv import dotenv_values
 
 # BYPASS_HUMAN_BEHAVIOR: If True, all delays and human-like waits are skipped
 BYPASS_HUMAN_BEHAVIOR = False  # Set to True to skip all waits and scraping is instant
-
 config = dotenv_values()  # Load .env file into a dictionary
 print(BYPASS_HUMAN_BEHAVIOR)
 
