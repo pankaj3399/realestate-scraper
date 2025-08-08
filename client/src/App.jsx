@@ -223,6 +223,14 @@ function App() {
         }
         break; // Stop on error
       }
+
+      // Add delay between pages to avoid captcha (6-8 minutes)
+      if (currentPage < end) {
+        const delayMinutes = Math.floor(Math.random() * 3) + 6; // Random 6-8 minutes
+        const delayMs = delayMinutes * 60 * 1000;
+        setScrapingProgress(`Waiting ${delayMinutes} minutes before next page to avoid captcha...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      }
     }
 
     setScrapingProgress(""); // Clear progress message
